@@ -9,6 +9,7 @@ import {
 import { baseUnitsToHuman, humanToBaseUnits } from "@/lib/units";
 import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
 import { getServerConnection } from "@/lib/serverSolana";
+import { ensureSchema, getDb } from "@/lib/db";
 
 type Body = {
   baseMint: string;
@@ -27,6 +28,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const body = req.body as Body;
     const baseMint = new PublicKey(body.baseMint);
     const owner = new PublicKey(body.owner);
+    await ensureSchema();
+    const registered = await getDb().query(
+      "SELECT mint FROM creatures WHERE mint = $1",
+      [baseMint.toBase58()]
+    );
+    if (registered.rowCount === 0) {
+      return res.status(403).json({
+        error: "That token is not a registered POND creature.",
+      });
+    }
+
     const sponsor = devnetFaucetKeypair();
     const connection = getServerConnection();
     const client = new DynamicBondingCurveClient(connection, "confirmed");
