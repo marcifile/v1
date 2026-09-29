@@ -27,7 +27,7 @@ export function shortAddress(value: string, size = 5) {
 }
 
 export function mediaUrl(value: string | null | undefined) {
-  if (!value) return "/pond-mark.svg";
+  if (!value) return "/p0nd-logo.png";
   if (value.startsWith("ipfs://")) {
     return "https://gateway.pinata.cloud/ipfs/" + value.slice("ipfs://".length);
   }
