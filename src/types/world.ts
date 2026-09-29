@@ -33,6 +33,7 @@ export type WorldCreature = {
   created_at: string;
   pond_symbol: string | null;
   pond_name: string | null;
+  pond_launch_engine: "meteora-dbc" | "raydium-cpmm";
   quote_decimals: number;
   quote_reserve_base_units: string;
   migration_threshold_base_units: string;
