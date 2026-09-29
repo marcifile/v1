@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>p0nd — launch coins inside other token economies</title>
+        <title>p0nd</title>
         <meta
           name="description"
           content="Launch real Solana tokens priced in other Solana tokens. Each quote-token ecosystem becomes a pond."
