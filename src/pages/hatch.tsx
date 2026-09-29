@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Keypair, Transaction } from "@solana/web3.js";
+import { Keypair, PublicKey, Transaction } from "@solana/web3.js";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { useRouter } from "next/router";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
@@ -57,6 +58,7 @@ export default function HatchPage() {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("pick some water.");
   const [launched, setLaunched] = useState<Launched | null>(null);
+  const [pondBalance, setPondBalance] = useState("0");
 
   const ponds = world?.ponds ?? [];
   const selected = useMemo(
@@ -72,6 +74,27 @@ export default function HatchPage() {
       setSelectedMint(ponds[0].mint);
     }
   }, [router.query.pond, ponds, selectedMint]);
+
+  const loadPondBalance = useCallback(async () => {
+    if (!publicKey || !selected) {
+      setPondBalance("0");
+      return;
+    }
+    try {
+      const ata = await getAssociatedTokenAddress(
+        new PublicKey(selected.mint),
+        publicKey
+      );
+      const balance = await connection.getTokenAccountBalance(ata, "confirmed");
+      setPondBalance(balance.value.uiAmountString || "0");
+    } catch {
+      setPondBalance("0");
+    }
+  }, [connection, publicKey, selected]);
+
+  useEffect(() => {
+    void loadPondBalance();
+  }, [loadPondBalance]);
 
   const sendPartiallySigned = useCallback(
     async (transaction: Transaction, signer?: Keypair) => {
@@ -112,6 +135,7 @@ export default function HatchPage() {
       if (!response.ok) throw new Error(data.error || "Could not prepare WATER.");
       await refresh();
       setSelectedMint(data.quoteMint);
+      window.setTimeout(() => void loadPondBalance(), 600);
       setMessage(
         "WATER is ready · 1,000,000 test WATER is in your wallet."
       );
@@ -189,6 +213,7 @@ export default function HatchPage() {
       if (!response.ok) throw new Error(data.error || "Could not register pond.");
       await refresh();
       setSelectedMint(data.pond.mint);
+      window.setTimeout(() => void loadPondBalance(), 600);
       setMessage(
         data.created
           ? "$" + data.pond.symbol + " is now a pond."
@@ -347,7 +372,7 @@ export default function HatchPage() {
         }),
       });
 
-      await refresh();
+      await Promise.all([refresh(), loadPondBalance()]);
       setMessage(
         "first swim complete · " +
           firstBuy +
@@ -411,6 +436,17 @@ export default function HatchPage() {
                 </button>
               ))}
             </div>
+
+            {selected && (
+              <div className="selected-pond-note">
+                <span>
+                  creatures in this pond trade in <strong>{"$" + (selected.symbol || "QUOTE")}</strong>
+                </span>
+                <span>
+                  your wallet · <strong>{pondBalance} {selected.symbol}</strong>
+                </span>
+              </div>
+            )}
 
             <div className="hatch-inline-actions">
               <button
@@ -595,10 +631,16 @@ export default function HatchPage() {
 
             <div className="first-swim">
               <small>FIRST SWIM · OPTIONAL</small>
+              <div className="wallet-line"><span>wallet</span><strong>{pondBalance} {selected?.symbol}</strong></div>
               <input
                 value={firstBuy}
                 onChange={(e) => setFirstBuy(e.target.value)}
               />
+              <div className="amount-presets">
+                <button type="button" onClick={() => setFirstBuy((Number(pondBalance || "0") * .25).toFixed(6).replace(/0+$/, "").replace(/\.$/, ""))}>25%</button>
+                <button type="button" onClick={() => setFirstBuy((Number(pondBalance || "0") * .5).toFixed(6).replace(/0+$/, "").replace(/\.$/, ""))}>50%</button>
+                <button type="button" onClick={() => setFirstBuy(pondBalance)}>MAX</button>
+              </div>
               <button
                 type="button"
                 disabled={busy === "buy"}
