@@ -20,6 +20,7 @@ import { buildDevnetPondCurve } from "@/lib/dbcPreset";
 import { deriveDevnetKeypair, devnetFaucetKeypair } from "@/lib/devnetFaucet";
 import { getServerConnection, POND_PROJECT_WALLET } from "@/lib/serverSolana";
 import { ensureSchema, getDb } from "@/lib/db";
+import { consumeRateLimit } from "@/lib/rateLimit";
 
 const WATER_DECIMALS = 6;
 const TARGET_WATER = 1_000_000n * 10n ** BigInt(WATER_DECIMALS);
@@ -171,6 +172,14 @@ async function ensurePondConfig(
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const rate = consumeRateLimit(req, "devnet-prepare", 8, 3600000);
+  if (!rate.ok) {
+    res.setHeader("Retry-After", String(rate.retryAfterSeconds));
+    return res.status(429).json({
+      error: "Too many requests. Try again later.",
+    });
   }
 
   try {
