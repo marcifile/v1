@@ -411,8 +411,16 @@ export default function HatchPage() {
         <div className="page-title">
           <span>HATCHERY · DEVNET PREVIEW</span>
           <h1>hatch a creature</h1>
-          <p>pick the water it lives in, give it a name, then let it swim.</p>
+          <p>pick an existing token as the market currency, then launch a new real token against it.</p>
         </div>
+
+        <section className="hatch-concept-strip">
+          <div><small>EXISTING TOKEN</small><strong>$PAID</strong></div>
+          <b>→ becomes a pond →</b>
+          <div><small>QUOTE CURRENCY</small><strong>PAID</strong></div>
+          <b>→ creature market →</b>
+          <div><small>NEW TOKEN</small><strong>FROG / PAID</strong></div>
+        </section>
 
         {!publicKey && (
           <section className="hatch-step hatch-connect">
