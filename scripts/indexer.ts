@@ -1,7 +1,9 @@
 import { ensureSchema, getDb } from "../src/lib/db";
 import { readCreatureSnapshot } from "../src/lib/chainSnapshot";
+import { getActiveCluster } from "../src/lib/serverSolana";
 
 const POLL_MS = Number(process.env.INDEXER_POLL_MS || 12000);
+const CLUSTER = getActiveCluster();
 
 async function indexOne(mint: string) {
   const db = getDb();
@@ -67,20 +69,22 @@ async function indexOne(mint: string) {
     await db.query(
       `
         INSERT INTO events
-          (type, creature_mint, pond_mint, amount_in, metadata)
+          (type, creature_mint, pond_mint, amount_in, metadata, cluster)
         SELECT
           'water_change',
           c.mint,
           c.pond_mint,
           $2,
-          $3::jsonb
+          $3::jsonb,
+          $4
         FROM creatures c
-        WHERE c.mint = $1
+        WHERE c.mint = $1 AND c.cluster = $4
       `,
       [
         snapshot.baseMint,
         delta.toString(),
         JSON.stringify({ source: "indexer", quoteReserve: snapshot.quoteReserve }),
+        CLUSTER,
       ]
     );
   }
@@ -89,16 +93,17 @@ async function indexOne(mint: string) {
     await db.query(
       `
         INSERT INTO events
-          (type, creature_mint, pond_mint, metadata)
+          (type, creature_mint, pond_mint, metadata, cluster)
         SELECT
           'graduation',
           c.mint,
           c.pond_mint,
-          $2::jsonb
+          $2::jsonb,
+          $3
         FROM creatures c
-        WHERE c.mint = $1
+        WHERE c.mint = $1 AND c.cluster = $3
       `,
-      [snapshot.baseMint, JSON.stringify({ source: "indexer" })]
+      [snapshot.baseMint, JSON.stringify({ source: "indexer" }), CLUSTER]
     );
   }
 }
@@ -107,7 +112,8 @@ async function cycle() {
   await ensureSchema();
   const db = getDb();
   const result = await db.query(
-    "SELECT mint FROM creatures ORDER BY created_at ASC"
+    "SELECT mint FROM creatures WHERE cluster = $1 ORDER BY created_at ASC",
+    [CLUSTER]
   );
 
   for (const row of result.rows) {
@@ -136,7 +142,7 @@ async function main() {
     JSON.stringify({
       event: "indexer_started",
       pollMs: POLL_MS,
-      cluster: process.env.NEXT_PUBLIC_SOLANA_CLUSTER || "devnet",
+      cluster: CLUSTER,
     })
   );
 
