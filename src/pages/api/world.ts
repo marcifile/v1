@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ensureSchema, getDb } from "@/lib/db";
+import { getActiveCluster } from "@/lib/serverSolana";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -9,6 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     await ensureSchema();
     const db = getDb();
+    const cluster = getActiveCluster();
 
     const [pondResult, creatureResult, eventResult] = await Promise.all([
       db.query(`
@@ -18,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           COALESCE(SUM(latest.quote_reserve), 0)::text AS quote_reserve_base_units,
           COALESCE(SUM(latest.total_trading_quote_fee), 0)::text AS total_trading_quote_fee_base_units
         FROM ponds p
-        LEFT JOIN creatures c ON c.pond_mint = p.mint
+        LEFT JOIN creatures c ON c.pond_mint = p.mint AND c.cluster = $1
         LEFT JOIN LATERAL (
           SELECT s.quote_reserve, s.total_trading_quote_fee
           FROM snapshots s
@@ -26,9 +28,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ORDER BY s.recorded_at DESC
           LIMIT 1
         ) latest ON TRUE
+        WHERE p.cluster = $1
         GROUP BY p.mint
         ORDER BY p.created_at ASC
-      `),
+      `, [cluster]),
       db.query(`
         SELECT
           c.mint, c.pond_mint, c.pool, c.config, c.creator,
@@ -45,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           COALESCE(latest.total_trading_quote_fee, 0)::text AS total_trading_quote_fee_base_units,
           latest.recorded_at AS snapshot_at
         FROM creatures c
-        JOIN ponds p ON p.mint = c.pond_mint
+        JOIN ponds p ON p.mint = c.pond_mint AND p.cluster = $1
         LEFT JOIN LATERAL (
           SELECT s.*
           FROM snapshots s
@@ -53,21 +56,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ORDER BY s.recorded_at DESC
           LIMIT 1
         ) latest ON TRUE
+        WHERE c.cluster = $1
         ORDER BY c.created_at DESC
-      `),
+      `, [cluster]),
       db.query(`
         SELECT id, type, creature_mint, pond_mint, actor, tx_signature,
                amount_in, amount_out, metadata, created_at
         FROM events
+        WHERE cluster = $1
         ORDER BY created_at DESC
         LIMIT 30
-      `),
+      `, [cluster]),
     ]);
 
     return res.status(200).json({
       ponds: pondResult.rows,
       creatures: creatureResult.rows,
       events: eventResult.rows,
+      cluster,
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {
