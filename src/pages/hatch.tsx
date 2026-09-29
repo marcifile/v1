@@ -182,12 +182,35 @@ export default function HatchPage() {
         baseMint: data.baseMint,
         pool: data.pool,
       }));
-      setMessage(
-        "something just hatched · " +
-          short(data.baseMint) +
-          " · tx " +
-          short(signature)
-      );
+
+      const registerResponse = await fetch("/api/creatures/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseMint: data.baseMint,
+          creator: publicKey.toBase58(),
+          name,
+          symbol,
+          metadataUri,
+          launchTx: signature,
+          pondName: "Pond Water",
+          pondSymbol: "WATER",
+        }),
+      });
+      const registered = await registerResponse.json();
+      if (!registerResponse.ok) {
+        setMessage(
+          "hatched on-chain · world indexing delayed · " +
+            (registered.error || "retry later")
+        );
+      } else {
+        setMessage(
+          "something just hatched · " +
+            short(data.baseMint) +
+            " · saved to the pond · tx " +
+            short(signature)
+        );
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "hatch failed.");
     } finally {
@@ -249,12 +272,27 @@ export default function HatchPage() {
 
       const tx = Transaction.from(Buffer.from(data.transaction, "base64"));
       const signature = await sendPartiallySigned(tx);
+      const eventResponse = await fetch("/api/creatures/record-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseMint: state.baseMint,
+          type: direction,
+          actor: publicKey.toBase58(),
+          txSignature: signature,
+          amountIn: amount,
+          amountOut: data.expectedAmountOut,
+        }),
+      });
+      const eventData = await eventResponse.json();
+
       setMessage(
         (direction === "buy" ? "bought · " : "sold · ") +
           "expected out " +
           data.expectedAmountOut +
           " · tx " +
-          short(signature)
+          short(signature) +
+          (eventResponse.ok ? " · world updated" : " · indexing delayed: " + (eventData.error || "retry later"))
       );
       await refreshStatus();
     } catch (error) {
