@@ -50,24 +50,6 @@ async function ensureFaucetFunded(
   return connection.getBalance(faucet.publicKey, "confirmed");
 }
 
-async function ensureUserGas(
-  connection: ReturnType<typeof getServerConnection>,
-  owner: PublicKey
-) {
-  const balance = await connection.getBalance(owner, "confirmed");
-  if (balance >= 0.25 * LAMPORTS_PER_SOL) return { balance, airdropped: false };
-
-  try {
-    await confirmAirdrop(connection, owner, 1 * LAMPORTS_PER_SOL);
-    return {
-      balance: await connection.getBalance(owner, "confirmed"),
-      airdropped: true,
-    };
-  } catch {
-    return { balance, airdropped: false };
-  }
-}
-
 async function ensureWaterMint(
   connection: ReturnType<typeof getServerConnection>,
   faucet: Keypair
@@ -195,8 +177,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const connection = getServerConnection();
     const faucet = devnetFaucetKeypair();
 
-    await ensureFaucetFunded(connection, faucet);
-    const gas = await ensureUserGas(connection, owner);
+    const sponsorBalance = await ensureFaucetFunded(connection, faucet);
     const quoteMint = await ensureWaterMint(connection, faucet);
     const water = await ensureWaterBalance(
       connection,
@@ -216,8 +197,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       config: config.toBase58(),
       waterBalance: water.amount,
       waterAta: water.ata,
-      userSol: gas.balance / LAMPORTS_PER_SOL,
-      userAirdropped: gas.airdropped,
+      feesSponsored: true,
+      sponsorBalance: sponsorBalance / LAMPORTS_PER_SOL,
       note: "devnet only · test assets have no value",
     });
   } catch (error) {
