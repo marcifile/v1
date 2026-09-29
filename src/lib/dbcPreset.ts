@@ -10,43 +10,56 @@ import {
   TokenType,
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 
-export const DEVNET_POND_PRESET = {
-  id: "pond-devnet-v1",
+export const P0ND_CURVE_DEFAULTS = {
   totalTokenSupply: 1_000_000_000,
-  migrationQuoteThreshold: 1_000,
   percentageSupplyOnMigration: 20,
   tradingFeeBps: 100,
   creatorTradingFeePercentage: 50,
 } as const;
 
-export function buildDevnetPondCurve(quoteDecimals: number) {
+export const DEVNET_POND_PRESET = {
+  id: "p0nd-devnet-v1",
+  ...P0ND_CURVE_DEFAULTS,
+  migrationQuoteThreshold: 1_000,
+} as const;
+
+function validateDecimals(quoteDecimals: number) {
   if (!Number.isInteger(quoteDecimals) || quoteDecimals < 0 || quoteDecimals > 18) {
     throw new Error("Unsupported quote mint decimals.");
+  }
+}
+
+export function buildPondCurve(args: {
+  quoteDecimals: number;
+  migrationQuoteThreshold: number;
+}) {
+  validateDecimals(args.quoteDecimals);
+  if (!Number.isFinite(args.migrationQuoteThreshold) || args.migrationQuoteThreshold <= 0) {
+    throw new Error("Migration quote threshold must be greater than zero.");
   }
 
   return buildCurve({
     token: {
       tokenType: TokenType.SPLToken,
       tokenBaseDecimal: TokenDecimal.SIX,
-      tokenQuoteDecimal: quoteDecimals,
+      tokenQuoteDecimal: args.quoteDecimals,
       tokenAuthorityOption: TokenAuthorityOption.Immutable,
-      totalTokenSupply: DEVNET_POND_PRESET.totalTokenSupply,
+      totalTokenSupply: P0ND_CURVE_DEFAULTS.totalTokenSupply,
       leftover: 0,
     },
     fee: {
       baseFeeParams: {
         baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
         feeSchedulerParam: {
-          startingFeeBps: DEVNET_POND_PRESET.tradingFeeBps,
-          endingFeeBps: DEVNET_POND_PRESET.tradingFeeBps,
+          startingFeeBps: P0ND_CURVE_DEFAULTS.tradingFeeBps,
+          endingFeeBps: P0ND_CURVE_DEFAULTS.tradingFeeBps,
           numberOfPeriod: 0,
           totalDuration: 0,
         },
       },
       dynamicFeeEnabled: false,
       collectFeeMode: CollectFeeMode.QuoteToken,
-      creatorTradingFeePercentage:
-        DEVNET_POND_PRESET.creatorTradingFeePercentage,
+      creatorTradingFeePercentage: P0ND_CURVE_DEFAULTS.creatorTradingFeePercentage,
       poolCreationFee: 0,
       enableFirstSwapWithMinFee: false,
     },
@@ -72,9 +85,14 @@ export function buildDevnetPondCurve(quoteDecimals: number) {
       cliffDurationFromMigrationTime: 0,
     },
     activationType: ActivationType.Timestamp,
-    percentageSupplyOnMigration:
-      DEVNET_POND_PRESET.percentageSupplyOnMigration,
-    migrationQuoteThreshold:
-      DEVNET_POND_PRESET.migrationQuoteThreshold,
+    percentageSupplyOnMigration: P0ND_CURVE_DEFAULTS.percentageSupplyOnMigration,
+    migrationQuoteThreshold: args.migrationQuoteThreshold,
+  });
+}
+
+export function buildDevnetPondCurve(quoteDecimals: number) {
+  return buildPondCurve({
+    quoteDecimals,
+    migrationQuoteThreshold: DEVNET_POND_PRESET.migrationQuoteThreshold,
   });
 }
