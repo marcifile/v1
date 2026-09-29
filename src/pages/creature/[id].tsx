@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { PublicKey, Transaction } from "@solana/web3.js";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
+import {
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+} from "@solana/spl-token";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Shell } from "@/components/Shell";
@@ -63,14 +67,27 @@ export default function CreaturePage() {
     }
 
     try {
+      const pondMint = new PublicKey(creature.pond_mint);
+      const pondMintAccount = await connection.getAccountInfo(
+        pondMint,
+        "confirmed"
+      );
+      const pondTokenProgram = pondMintAccount?.owner.equals(TOKEN_2022_PROGRAM_ID)
+        ? TOKEN_2022_PROGRAM_ID
+        : TOKEN_PROGRAM_ID;
+
       const [pondAta, creatureAta] = await Promise.all([
         getAssociatedTokenAddress(
-          new PublicKey(creature.pond_mint),
-          publicKey
+          pondMint,
+          publicKey,
+          false,
+          pondTokenProgram
         ),
         getAssociatedTokenAddress(
           new PublicKey(creature.mint),
-          publicKey
+          publicKey,
+          false,
+          TOKEN_PROGRAM_ID
         ),
       ]);
 
@@ -96,6 +113,11 @@ export default function CreaturePage() {
 
   const loadStatus = useCallback(async () => {
     if (!id) return;
+    if (creature?.pond_launch_engine === "raydium-cpmm") {
+      setLive(null);
+      setLiveError("");
+      return;
+    }
     try {
       const response = await fetch(
         "/api/dbc/status?baseMint=" + encodeURIComponent(id),
@@ -110,7 +132,7 @@ export default function CreaturePage() {
         err instanceof Error ? err.message : "can't see through the water."
       );
     }
-  }, [id]);
+  }, [id, creature?.pond_launch_engine]);
 
   useEffect(() => {
     if (!id) return;
@@ -129,6 +151,11 @@ export default function CreaturePage() {
       return;
     }
     if (!creature) return;
+
+    if (creature.pond_launch_engine === "raydium-cpmm") {
+      setTradeLog("Raydium creator-fee claiming is not wired into p0nd yet.");
+      return;
+    }
 
     if (publicKey.toBase58() !== creature.creator) {
       setTradeLog("only this creature's creator can claim its creator fees.");
@@ -210,7 +237,11 @@ export default function CreaturePage() {
     setTradeLog(direction === "buy" ? "making a splash..." : "swimming back...");
 
     try {
-      const response = await fetch("/api/dbc/swap", {
+      const response = await fetch(
+        creature.pond_launch_engine === "raydium-cpmm"
+          ? "/api/raydium/swap"
+          : "/api/dbc/swap",
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -370,11 +401,15 @@ export default function CreaturePage() {
               <span><i /> READ FROM CHAIN</span>
             </header>
 
-            <div className="specimen-stat"><small>WATER / QUOTE RESERVE</small><strong>{water} {creature.pond_symbol}</strong></div>
-            <div className="specimen-stat"><small>GRADUATES AT</small><strong>{threshold} {creature.pond_symbol}</strong></div>
-            <div className="specimen-stat"><small>GRADUATION</small><strong>{progressPercent}%</strong></div>
-            <div className="specimen-stat fee-stat"><small>TOTAL TRADING FEES</small><strong>{totalTradingFee} {creature.pond_symbol}</strong></div>
-            <div className="specimen-stat fee-stat"><small>CREATOR FEES CLAIMABLE</small><strong>{creatorFee} {creature.pond_symbol}</strong><span>{creatorFeeShare}% creator share configured on the DBC</span></div>
+            <div className="specimen-stat"><small>{creature.pond_launch_engine === "raydium-cpmm" ? "INITIAL POND LIQUIDITY" : "WATER / QUOTE RESERVE"}</small><strong>{water} {creature.pond_symbol}</strong></div>
+            <div className="specimen-stat"><small>MARKET</small><strong>{creature.pond_launch_engine === "raydium-cpmm" ? "RAYDIUM CPMM" : "METEORA DBC"}</strong></div>
+            <div className="specimen-stat"><small>{creature.pond_launch_engine === "raydium-cpmm" ? "STATE" : "GRADUATION"}</small><strong>{creature.pond_launch_engine === "raydium-cpmm" ? "LIVE AMM" : progressPercent + "%"}</strong></div>
+            {creature.pond_launch_engine !== "raydium-cpmm" && (
+              <>
+                <div className="specimen-stat fee-stat"><small>TOTAL TRADING FEES</small><strong>{totalTradingFee} {creature.pond_symbol}</strong></div>
+                <div className="specimen-stat fee-stat"><small>CREATOR FEES CLAIMABLE</small><strong>{creatorFee} {creature.pond_symbol}</strong><span>{creatorFeeShare}% creator share configured on the DBC</span></div>
+              </>
+            )}
 
             <div className="specimen-meter"><span style={{ width: Math.max(0, Math.min(100, progressPercent)) + "%" }} /></div>
 
@@ -386,7 +421,9 @@ export default function CreaturePage() {
             </div>
 
             <p className="read-state">
-              {liveError
+              {creature.pond_launch_engine === "raydium-cpmm"
+                ? "live Raydium pool · trades settle in the pond token"
+                : liveError
                 ? "live read delayed · " + liveError
                 : live?.isMigrated
                 ? "graduated into deeper water."
@@ -395,32 +432,34 @@ export default function CreaturePage() {
           </div>
         </section>
 
-        <section className="creator-vault">
-          <div>
-            <small>CREATOR ECONOMICS</small>
-            <h2>the dev earns in the pond token.</h2>
-            <p>
-              This creature's DBC is configured so the creator receives {creatorFeeShare}% of
-              the creator/partner trading-fee share. Because fees are collected in the quote
-              token, the creator earns {creature.pond_symbol}, not {creature.symbol}.
-            </p>
-          </div>
-          <div className="creator-vault-readout">
-            <small>CLAIMABLE NOW</small>
-            <strong>{creatorFee} {creature.pond_symbol}</strong>
-            {isCreator ? (
-              <button
-                type="button"
-                disabled={Boolean(busy) || Number(creatorFee) <= 0}
-                onClick={() => void claimCreatorFees()}
-              >
-                {busy === "claim" ? "CLAIMING..." : "CLAIM CREATOR FEES"}
-              </button>
-            ) : (
-              <span>only the on-chain creator can claim</span>
-            )}
-          </div>
-        </section>
+        {creature.pond_launch_engine !== "raydium-cpmm" && (
+                  <section className="creator-vault">
+                    <div>
+                      <small>CREATOR ECONOMICS</small>
+                      <h2>the dev earns in the pond token.</h2>
+                      <p>
+                        This creature's DBC is configured so the creator receives {creatorFeeShare}% of
+                        the creator/partner trading-fee share. Because fees are collected in the quote
+                        token, the creator earns {creature.pond_symbol}, not {creature.symbol}.
+                      </p>
+                    </div>
+                    <div className="creator-vault-readout">
+                      <small>CLAIMABLE NOW</small>
+                      <strong>{creatorFee} {creature.pond_symbol}</strong>
+                      {isCreator ? (
+                        <button
+                          type="button"
+                          disabled={Boolean(busy) || Number(creatorFee) <= 0}
+                          onClick={() => void claimCreatorFees()}
+                        >
+                          {busy === "claim" ? "CLAIMING..." : "CLAIM CREATOR FEES"}
+                        </button>
+                      ) : (
+                        <span>only the on-chain creator can claim</span>
+                      )}
+                    </div>
+                  </section>
+        )}
 
         <section className="trade-station">
           <div className="trade-box">
