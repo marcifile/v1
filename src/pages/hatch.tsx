@@ -13,8 +13,7 @@ type PondState = {
 
 type SetupInfo = {
   waterBalance: string;
-  userSol: number;
-  userAirdropped: boolean;
+  feesSponsored: boolean;
 };
 
 type PoolStatus = {
@@ -123,12 +122,11 @@ export default function HatchPage() {
       });
       setSetup({
         waterBalance: data.waterBalance,
-        userSol: data.userSol,
-        userAirdropped: Boolean(data.userAirdropped),
+        feesSponsored: Boolean(data.feesSponsored),
       });
       setStatus(null);
       setMessage(
-        "test pond ready · 1,000,000 WATER + devnet gas are in your wallet."
+        "test pond ready · 1,000,000 WATER is in your wallet · devnet fees are sponsored."
       );
     } catch (error) {
       setMessage(
@@ -313,7 +311,7 @@ export default function HatchPage() {
               <span>water mint</span><strong>{short(state.quoteMint)}</strong>
               <span>dbc config</span><strong>{short(state.config)}</strong>
               <span>your WATER</span><strong>{setup?.waterBalance ?? "—"}</strong>
-              <span>your devnet SOL</span><strong>{setup ? setup.userSol.toFixed(4) : "—"}</strong>
+              <span>devnet fees</span><strong>{setup?.feesSponsored ? "sponsored" : "—"}</strong>
             </div>
           </section>
 
@@ -321,8 +319,8 @@ export default function HatchPage() {
             <small>02 · HATCH</small>
             <h2>new creature</h2>
             <p>
-              This is the first step that should open Phantom: you are actually
-              creating a devnet token + Meteora pool.
+              This opens Phantom because you own/sign the creature launch.
+              Railway pays the devnet fee and account rent for this test.
             </p>
             <label className="lab-input">
               <span>name</span>
