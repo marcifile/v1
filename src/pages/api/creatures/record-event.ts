@@ -30,7 +30,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const verifiedTx = await verifyConfirmedTransaction({
       signature: body.txSignature,
       expectedSigner: body.actor,
-      expectedAccounts: [snapshot.baseMint, snapshot.pool],
+      expectedAccounts:
+        body.type === "claim_creator_fee"
+          ? [snapshot.pool]
+          : [snapshot.baseMint, snapshot.pool],
     });
 
     await withTransaction(async (client) => {
