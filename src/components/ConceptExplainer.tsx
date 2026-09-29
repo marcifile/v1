@@ -178,6 +178,63 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
         </div>
       </section>
 
+      <section className="who-pond">
+        <header>
+          <span>WHO IS THIS FOR?</span>
+          <h2>three different reasons to care.</h2>
+        </header>
+        <div className="who-grid">
+          <article>
+            <small>POND COMMUNITIES</small>
+            <h3>make your token useful as a market currency.</h3>
+            <p>
+              Instead of every related launch pairing back to SOL, multiple
+              independent markets can use the same pond token as their common
+              quote asset.
+            </p>
+          </article>
+          <article>
+            <small>CREATURE CREATORS</small>
+            <h3>launch inside an existing token economy.</h3>
+            <p>
+              Pick a supported pond, create a real SPL token, and let its DBC
+              collect configured trading fees in the pond token.
+            </p>
+          </article>
+          <article>
+            <small>TRADERS</small>
+            <h3>move between a creature and its pond.</h3>
+            <p>
+              Buy with the pond token and receive the creature. Sell the
+              creature and receive the pond token back. The reserve is visible
+              as water depth.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section className="quick-facts">
+        <header>
+          <span>THE SYSTEM, ON PAPER</span>
+          <h2>quick facts.</h2>
+        </header>
+        <div className="facts-grid">
+          <div><small>CHAIN</small><strong>Solana</strong></div>
+          <div><small>LAUNCH MARKET</small><strong>Meteora DBC</strong></div>
+          <div><small>QUOTE ASSET</small><strong>the pond token</strong></div>
+          <div><small>GRADUATION</small><strong>DAMM v2</strong></div>
+          <div><small>METADATA</small><strong>IPFS / Pinata</strong></div>
+          <div><small>WORLD STATE</small><strong>indexed from chain</strong></div>
+          <div><small>ONE POND</small><strong>many creatures</strong></div>
+          <div><small>CURRENT NETWORK</small><strong>devnet only</strong></div>
+        </div>
+        <p>
+          A real on-chain market does not guarantee that every third-party
+          terminal will display the pair. Axiom, DexScreener, Jupiter and other
+          interfaces each decide what markets they index and route.
+        </p>
+      </section>
+
       <section className="live-proof">
         <header>
           <div>
