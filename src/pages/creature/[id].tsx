@@ -354,6 +354,13 @@ export default function CreaturePage() {
               <h1>{"$" + creature.symbol}</h1>
               <p>{"living in $" + (creature.pond_symbol ?? "?")}</p>
               {creature.description && <span>{creature.description}</span>}
+              {(creature.website_url || creature.x_url || creature.telegram_url) && (
+                <div className="specimen-links">
+                  {creature.website_url && <a href={creature.website_url} target="_blank" rel="noreferrer">WEB ↗</a>}
+                  {creature.x_url && <a href={creature.x_url} target="_blank" rel="noreferrer">X ↗</a>}
+                  {creature.telegram_url && <a href={creature.telegram_url} target="_blank" rel="noreferrer">TG ↗</a>}
+                </div>
+              )}
             </div>
           </div>
 
