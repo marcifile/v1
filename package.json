@@ -1,6 +1,6 @@
 {
   "name": "pond-v1",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,11 +10,13 @@
   },
   "engines": { "node": ">=20" },
   "dependencies": {
-    "@jup-ag/wallet-adapter": "^0.2.6",
     "@meteora-ag/dynamic-bonding-curve-sdk": "1.5.13",
     "@solana/spl-token": "^0.4.15",
+    "@solana/wallet-adapter-react": "^0.15.39",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
     "@solana/wallet-adapter-wallets": "^0.19.38",
     "@solana/web3.js": "^1.98.4",
+    "bn.js": "^5.2.2",
     "bs58": "^6.0.0",
     "next": "^15.5.24",
     "pg": "^8.16.3",
@@ -24,6 +26,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/bn.js": "^5.2.0",
     "@types/node": "^24.7.2",
     "@types/pg": "^8.15.5",
     "@types/react": "^19.2.2",
