@@ -874,7 +874,7 @@ a.field-row:hover{background:#d3dfca}
 .lab-health>header small{display:block;font-size:8px;letter-spacing:.12em}
 .lab-health>header h2{font-size:18px;margin:3px 0 0}
 .lab-health>header>strong{font-size:9px;color:#d5d45b}
-.lab-health-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.lab-health-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 .lab-health-grid>div{padding:12px;border-right:1px solid #8f848a}
 .lab-health-grid>div:last-child{border-right:0}
 .lab-health-grid span{display:block;font-size:8px;text-transform:uppercase;letter-spacing:.08em}
