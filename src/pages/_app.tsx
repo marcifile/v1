@@ -12,11 +12,17 @@ import { WorldProvider } from "@/hooks/useWorld";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "@/styles/globals.css";
 
-const FALLBACK_DEVNET_RPC = "https://api.devnet.solana.com";
+const DEVNET_RPC = "https://api.devnet.solana.com";
+const MAINNET_RPC = "https://api.mainnet-beta.solana.com";
 
 export default function App({ Component, pageProps }: AppProps) {
+  const cluster = String(
+    process.env.NEXT_PUBLIC_SOLANA_CLUSTER || "mainnet-beta"
+  ).toLowerCase();
   const endpoint =
-    process.env.NEXT_PUBLIC_DEVNET_RPC_URL || FALLBACK_DEVNET_RPC;
+    cluster === "mainnet" || cluster === "mainnet-beta"
+      ? MAINNET_RPC
+      : DEVNET_RPC;
 
   const wallets = useMemo(
     () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
@@ -26,24 +32,27 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>pond — coins living in other coins</title>
+        <title>p0nd</title>
         <meta
           name="description"
           content="Launch real Solana tokens priced in other Solana tokens."
         />
-        <link rel="icon" href="/pond-mark.svg" />
-        <meta name="theme-color" content="#d5d5c7" />
-        <meta property="og:site_name" content="pond" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link rel="apple-touch-icon" href="/p0nd-logo.png" />
+        <meta name="theme-color" content="#0b0d0a" />
+        <meta property="og:site_name" content="p0nd" />
+        <meta property="og:title" content="p0nd" />
+        <meta property="og:image" content="/p0nd-logo.png" />
       </Head>
       <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
-          <WorldProvider>
-            <Component {...pageProps} />
-          </WorldProvider>
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+            <WorldProvider>
+              <Component {...pageProps} />
+            </WorldProvider>
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
     </>
   );
 }
