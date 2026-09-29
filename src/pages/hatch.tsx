@@ -494,7 +494,7 @@ export default function HatchPage() {
               </button>
             </div>
 
-            <details className="register-pond">
+            <details className="register-pond" id="register-pond">
               <summary>register an existing devnet token as a pond · once</summary>
               <p className="register-note">
                 this does not mint a new pond token. it verifies an existing token,
