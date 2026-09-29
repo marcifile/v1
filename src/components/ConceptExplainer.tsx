@@ -14,10 +14,10 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
     <div className="concept-stack">
       <section className="concept-intro">
         <div className="concept-copy">
-          <span>SO WHAT IS POND?</span>
+          <span>SO WHAT IS p0nd?</span>
           <h2>turn a token into an economy.</h2>
           <p>
-            Usually a new Solana coin launches against SOL. On POND, it can
+            Usually a new Solana coin launches against SOL. On p0nd, it can
             launch against another existing Solana token instead.
           </p>
         </div>
@@ -32,7 +32,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           </div>
           <div className="pair-arrow">→</div>
           <div className="pair-card pond-pair">
-            <small>ON POND</small>
+            <small>ON p0nd</small>
             <div className="pair-line">
               <strong>PAID</strong><i>↔</i><strong>FROG</strong>
             </div>
@@ -162,7 +162,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <p>
             Each creature is a real Meteora DBC market. The current test config
             gives the creature creator 50% of the DBC creator/partner trading-fee
-            share. Because POND collects those fees in the quote token, a FROG
+            share. Because p0nd collects those fees in the quote token, a FROG
             creator in the PAID pond earns claimable PAID as FROG trades.
           </p>
           <span>
