@@ -1,7 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { WorldPayload } from "@/types/world";
 
-export function useWorld(refreshMs = 12000) {
+type WorldContextValue = {
+  world: WorldPayload | null;
+  error: string;
+  loading: boolean;
+  refresh: () => Promise<void>;
+};
+
+const WorldContext = createContext<WorldContextValue | null>(null);
+
+export function WorldProvider({ children }: { children: ReactNode }) {
   const [world, setWorld] = useState<WorldPayload | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -24,10 +41,31 @@ export function useWorld(refreshMs = 12000) {
 
   useEffect(() => {
     void refresh();
-    if (refreshMs <= 0) return;
-    const timer = window.setInterval(() => void refresh(), refreshMs);
-    return () => window.clearInterval(timer);
-  }, [refresh, refreshMs]);
 
-  return { world, error, loading, refresh };
+    const timer = window.setInterval(() => void refresh(), 10_000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [refresh]);
+
+  const value = useMemo(
+    () => ({ world, error, loading, refresh }),
+    [world, error, loading, refresh]
+  );
+
+  return <WorldContext.Provider value={value}>{children}</WorldContext.Provider>;
+}
+
+export function useWorld(_refreshMs = 10_000) {
+  const context = useContext(WorldContext);
+  if (!context) {
+    throw new Error("useWorld must be used inside WorldProvider.");
+  }
+  return context;
 }
