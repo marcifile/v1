@@ -31,9 +31,10 @@ export async function readCreatureSnapshot(baseMintInput: string) {
     TOKEN_PROGRAM_ID
   );
 
-  const progress = await client.state.getPoolQuoteTokenCurveProgress(
-    pool.publicKey
-  );
+  const [progress, feeMetrics] = await Promise.all([
+    client.state.getPoolQuoteTokenCurveProgress(pool.publicKey),
+    client.state.getPoolFeeMetrics(pool.publicKey),
+  ]);
 
   return {
     baseMint: state.baseMint.toBase58(),
@@ -45,5 +46,7 @@ export async function readCreatureSnapshot(baseMintInput: string) {
     migrationThreshold: config.migrationQuoteThreshold.toString(10),
     progress,
     migrated: Number(state.isMigrated) !== 0,
+    creatorQuoteFee: feeMetrics.current.creatorQuoteFee.toString(10),
+    totalTradingQuoteFee: feeMetrics.total.totalTradingQuoteFee.toString(10),
   };
 }
