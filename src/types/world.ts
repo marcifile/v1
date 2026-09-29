@@ -6,6 +6,7 @@ export type WorldPond = {
   quote_decimals: number;
   creature_count: number;
   quote_reserve_base_units: string;
+  total_trading_quote_fee_base_units: string;
 };
 
 export type WorldCreature = {
@@ -29,6 +30,8 @@ export type WorldCreature = {
   migration_threshold_base_units: string;
   progress: number;
   migrated: boolean;
+  creator_quote_fee_base_units: string;
+  total_trading_quote_fee_base_units: string;
   snapshot_at: string | null;
 };
 
