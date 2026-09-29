@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { readCreatureSnapshot } from "@/lib/chainSnapshot";
 import { withTransaction } from "@/lib/db";
+import { verifyConfirmedTransaction } from "@/lib/verifyTransaction";
 
 type Body = {
   baseMint: string;
@@ -18,7 +19,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const body = req.body as Body;
+    if (!["buy", "sell", "claim_creator_fee"].includes(String(body.type))) {
+      return res.status(400).json({ error: "Unsupported event type." });
+    }
+    if (!body.actor || !body.txSignature) {
+      return res.status(400).json({ error: "Actor and confirmed transaction are required." });
+    }
+
     const snapshot = await readCreatureSnapshot(body.baseMint);
+    const verifiedTx = await verifyConfirmedTransaction({
+      signature: body.txSignature,
+      expectedSigner: body.actor,
+      expectedAccounts: [snapshot.baseMint, snapshot.pool],
+    });
 
     await withTransaction(async (client) => {
       const exists = await client.query(
@@ -59,8 +72,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await client.query(
         `
           INSERT INTO events
-            (type, creature_mint, pond_mint, actor, tx_signature, amount_in, amount_out)
-          VALUES ($1,$2,$3,$4,$5,$6,$7)
+            (type, creature_mint, pond_mint, actor, tx_signature, amount_in, amount_out, metadata)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb)
+          ON CONFLICT DO NOTHING
         `,
         [
           body.type,
@@ -70,6 +84,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           body.txSignature || null,
           body.amountIn || null,
           body.amountOut || null,
+          JSON.stringify({
+            verified: true,
+            verifiedSlot: verifiedTx.slot,
+            source: "confirmed-ui-transaction",
+          }),
         ]
       );
     });
