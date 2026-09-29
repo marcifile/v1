@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { AppProps } from "next/app";
+import Head from "next/head";
 import {
   ConnectionProvider,
   WalletProvider,
@@ -23,7 +24,13 @@ export default function App({ Component, pageProps }: AppProps) {
   );
 
   return (
-    <ConnectionProvider endpoint={endpoint}>
+    <>
+      <Head>
+        <link rel="icon" href="/pond-mark.svg" />
+        <meta name="theme-color" content="#d5d5c7" />
+        <meta property="og:site_name" content="pond" />
+      </Head>
+      <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <WorldProvider>
@@ -32,5 +39,6 @@ export default function App({ Component, pageProps }: AppProps) {
         </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
+    </>
   );
 }
