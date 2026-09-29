@@ -26,30 +26,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         : getActiveCluster();
 
     const inspected = await inspectToken(mint, cluster);
-    const minimumLiquidityUsd =
-      cluster === "mainnet"
-        ? Math.max(0, Number(process.env.P0ND_MIN_POND_LIQUIDITY_USD || "10000"))
-        : 0;
     const reasons: string[] = [];
 
+    // P0ND should not invent market/liquidity requirements for becoming a pond.
+    // The real compatibility boundary is whether Meteora can use the mint as a
+    // quote asset. Standard SPL mints work directly; some Token-2022 mints need
+    // a Meteora token badge.
     if (!inspected.launchSupportedNow) {
       reasons.push(
         inspected.tokenProgram === "token-2022"
-          ? "Token-2022 quote mints require a Meteora token badge."
+          ? "This Token-2022 quote mint needs a Meteora token badge before it can be used as a pond."
           : "This token program is not supported as a p0nd quote asset."
-      );
-    }
-    if (cluster === "mainnet" && (!inspected.priceUsd || inspected.priceUsd <= 0)) {
-      reasons.push("A reliable USD price is required.");
-    }
-    if (
-      cluster === "mainnet" &&
-      Number(inspected.market?.liquidityUsd || 0) < minimumLiquidityUsd
-    ) {
-      reasons.push(
-        "Detected market liquidity must be at least $" +
-          minimumLiquidityUsd.toLocaleString() +
-          "."
       );
     }
 
@@ -57,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ...inspected,
       eligibility: {
         eligible: reasons.length === 0,
-        minimumLiquidityUsd,
+        minimumLiquidityUsd: 0,
         reasons,
       },
     });
