@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const [pondResult, creatureResult, eventResult] = await Promise.all([
       db.query(`
         SELECT
-          p.mint, p.symbol, p.name, p.config, p.quote_decimals,
+          p.mint, p.symbol, p.name, p.config, p.launch_engine, p.quote_decimals,
           p.image_uri, p.price_usd, p.liquidity_usd, p.market_cap_usd,
           COUNT(c.mint)::int AS creature_count,
           COALESCE(SUM(latest.quote_reserve), 0)::text AS quote_reserve_base_units,
