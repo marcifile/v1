@@ -86,7 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await ensureSchema();
     const db = getDb();
     const existing = await db.query(
-      "SELECT mint, symbol, name, config, quote_decimals FROM ponds WHERE mint = $1 AND cluster = $2",
+      "SELECT mint, symbol, name, config, launch_engine, quote_decimals FROM ponds WHERE mint = $1 AND cluster = $2",
       [quoteMint.toBase58(), cluster]
     );
     if (existing.rowCount) {
@@ -94,6 +94,70 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         alreadyRegistered: true,
         pond: existing.rows[0],
         inspection: inspected,
+      });
+    }
+
+    // Raydium fallback ponds do not need an on-chain DBC config up front.
+    // Opening the pond registers the existing quote mint; each creature later
+    // creates its own seeded Raydium pool against that quote asset.
+    if (inspected.launchEngine === "raydium-cpmm") {
+      const syntheticConfig = "raydium:" + quoteMint.toBase58();
+      const result = await db.query(
+        `
+          INSERT INTO ponds
+            (mint, symbol, name, config, launch_engine, quote_decimals, image_uri, price_usd, liquidity_usd, market_cap_usd, cluster)
+          VALUES ($1,$2,$3,$4,'raydium-cpmm',$5,$6,$7,$8,$9,$10)
+          ON CONFLICT (mint) DO UPDATE SET
+            symbol = EXCLUDED.symbol,
+            name = EXCLUDED.name,
+            config = EXCLUDED.config,
+            launch_engine = EXCLUDED.launch_engine,
+            quote_decimals = EXCLUDED.quote_decimals,
+            image_uri = EXCLUDED.image_uri,
+            price_usd = EXCLUDED.price_usd,
+            liquidity_usd = EXCLUDED.liquidity_usd,
+            market_cap_usd = EXCLUDED.market_cap_usd,
+            cluster = EXCLUDED.cluster,
+            updated_at = NOW()
+          RETURNING mint, symbol, name, config, launch_engine, quote_decimals
+        `,
+        [
+          quoteMint.toBase58(),
+          inspected.symbol || "TOKEN",
+          inspected.name || inspected.symbol || "Pond",
+          syntheticConfig,
+          inspected.decimals,
+          inspected.imageUri,
+          inspected.priceUsd,
+          inspected.market?.liquidityUsd || null,
+          inspected.market?.marketCap || null,
+          cluster,
+        ]
+      );
+
+      await db.query(
+        `
+          INSERT INTO events (type, pond_mint, actor, metadata, cluster)
+          VALUES ('pond_opened', $1, $2, $3::jsonb, $4)
+        `,
+        [
+          quoteMint.toBase58(),
+          payer.toBase58(),
+          JSON.stringify({
+            launchEngine: "raydium-cpmm",
+            registrationOnly: true,
+          }),
+          cluster,
+        ]
+      );
+
+      return res.status(200).json({
+        alreadyRegistered: true,
+        registeredNow: true,
+        pond: result.rows[0],
+        inspection: inspected,
+        launchEngine: "raydium-cpmm",
+        note: "This pond will hatch creatures through seeded Raydium pools.",
       });
     }
 
@@ -132,12 +196,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const result = await db.query(
         `
           INSERT INTO ponds
-            (mint, symbol, name, config, quote_decimals, image_uri, price_usd, liquidity_usd, market_cap_usd, cluster)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+            (mint, symbol, name, config, launch_engine, quote_decimals, image_uri, price_usd, liquidity_usd, market_cap_usd, cluster)
+          VALUES ($1,$2,$3,$4,'meteora-dbc',$5,$6,$7,$8,$9,$10)
           ON CONFLICT (mint) DO UPDATE SET
             symbol = EXCLUDED.symbol,
             name = EXCLUDED.name,
             config = EXCLUDED.config,
+            launch_engine = EXCLUDED.launch_engine,
             quote_decimals = EXCLUDED.quote_decimals,
             image_uri = EXCLUDED.image_uri,
             price_usd = EXCLUDED.price_usd,
@@ -145,7 +210,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             market_cap_usd = EXCLUDED.market_cap_usd,
             cluster = EXCLUDED.cluster,
             updated_at = NOW()
-          RETURNING mint, symbol, name, config, quote_decimals
+          RETURNING mint, symbol, name, config, launch_engine, quote_decimals
         `,
         [
           quoteMint.toBase58(),
