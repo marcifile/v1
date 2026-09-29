@@ -6,7 +6,7 @@ import {
   DynamicBondingCurveClient,
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
-import { getServerConnection } from "@/lib/serverSolana";
+import { getActiveCluster, getServerConnection } from "@/lib/serverSolana";
 import { ensureSchema, getDb } from "@/lib/db";
 import { consumeRateLimit } from "@/lib/rateLimit";
 
@@ -37,7 +37,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const configKey = new PublicKey(body.config);
     const baseMintKey = new PublicKey(body.baseMint);
     const poolCreator = new PublicKey(body.payer);
-    const sponsor = devnetFaucetKeypair();
+    const cluster = getActiveCluster();
+    const sponsor = cluster === "devnet" ? devnetFaucetKeypair() : null;
 
     const name = body.name.trim().slice(0, 32);
     const symbol = body.symbol.trim().toUpperCase().slice(0, 10);
@@ -47,12 +48,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await ensureSchema();
     const registeredPond = await getDb().query(
-      "SELECT mint, config FROM ponds WHERE config = $1",
-      [configKey.toBase58()]
+      "SELECT mint, config FROM ponds WHERE config = $1 AND cluster = $2",
+      [configKey.toBase58(), cluster]
     );
     if (registeredPond.rowCount === 0) {
       return res.status(403).json({
-        error: "That DBC config is not a registered POND habitat.",
+        error: "That DBC config is not a registered p0nd habitat.",
       });
     }
 
@@ -61,7 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const configState = await client.state.getPoolConfig(configKey);
 
     if (!configState) {
-      return res.status(404).json({ error: "Pond config not found on devnet." });
+      return res.status(404).json({ error: "Pond config not found on the active network." });
     }
     if (
       configState.quoteMint.toBase58() !== String(registeredPond.rows[0].mint)
@@ -84,15 +85,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       name,
       symbol,
       uri: body.uri,
-      payer: sponsor.publicKey,
+      payer: sponsor?.publicKey || poolCreator,
       poolCreator,
       tokenBadge,
     });
 
     const latest = await connection.getLatestBlockhash("confirmed");
-    tx.feePayer = sponsor.publicKey;
+    tx.feePayer = sponsor?.publicKey || poolCreator;
     tx.recentBlockhash = latest.blockhash;
-    tx.partialSign(sponsor);
+    if (sponsor) tx.partialSign(sponsor);
 
     const pool = deriveDbcPoolAddress(
       configState.quoteMint,
@@ -108,7 +109,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       config: configKey.toBase58(),
       pool: pool.toBase58(),
       quoteMint: configState.quoteMint.toBase58(),
-      sponsored: true,
+      sponsored: Boolean(sponsor),
+      cluster,
       lastValidBlockHeight: latest.lastValidBlockHeight,
     });
   } catch (error) {
