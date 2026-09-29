@@ -6,7 +6,12 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Shell } from "@/components/Shell";
 import { useWorld } from "@/hooks/useWorld";
-import { formatBaseUnits, mediaUrl, shortAddress } from "@/lib/display";
+import {
+  formatBaseUnits,
+  mediaUrl,
+  shortAddress,
+  solanaExplorerUrl,
+} from "@/lib/display";
 
 type LiveStatus = {
   quoteReserve: string;
@@ -367,9 +372,10 @@ export default function CreaturePage() {
             <div className="specimen-meter"><span style={{ width: Math.max(0, Math.min(100, progressPercent)) + "%" }} /></div>
 
             <div className="specimen-addresses">
-              <div><small>POOL</small><strong>{shortAddress(creature.pool, 7)}</strong></div>
-              <div><small>CREATOR</small><strong>{shortAddress(creature.creator, 7)}</strong></div>
-              <div><small>MINT</small><strong>{shortAddress(creature.mint, 7)}</strong></div>
+              <div><small>POOL</small><strong><a href={solanaExplorerUrl("address", creature.pool)} target="_blank" rel="noreferrer">{shortAddress(creature.pool, 7)} ↗</a></strong></div>
+              <div><small>CREATOR</small><strong><a href={solanaExplorerUrl("address", creature.creator)} target="_blank" rel="noreferrer">{shortAddress(creature.creator, 7)} ↗</a></strong></div>
+              <div><small>MINT</small><strong><a href={solanaExplorerUrl("address", creature.mint)} target="_blank" rel="noreferrer">{shortAddress(creature.mint, 7)} ↗</a></strong></div>
+              {creature.launch_tx && <div><small>LAUNCH TX</small><strong><a href={solanaExplorerUrl("tx", creature.launch_tx)} target="_blank" rel="noreferrer">{shortAddress(creature.launch_tx, 7)} ↗</a></strong></div>}
             </div>
 
             <p className="read-state">
@@ -446,7 +452,7 @@ export default function CreaturePage() {
               <time>{new Date(event.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
               <strong>{event.type.toUpperCase()}</strong>
               <span>{event.amount_in ? event.amount_in + " in" : "indexed"}</span>
-              <span>{event.tx_signature ? shortAddress(event.tx_signature, 6) : "chain"}</span>
+              <span>{event.tx_signature ? <a href={solanaExplorerUrl("tx", event.tx_signature)} target="_blank" rel="noreferrer">{shortAddress(event.tx_signature, 6)} ↗</a> : "chain"}</span>
             </div>
           ))}
           {events.length === 0 && <div className="field-empty">no ripples yet.</div>}
