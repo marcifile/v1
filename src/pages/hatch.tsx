@@ -40,6 +40,7 @@ export default function HatchPage() {
   const [telegram, setTelegram] = useState("");
   const [imageDataUrl, setImageDataUrl] = useState("");
   const [firstBuy, setFirstBuy] = useState("");
+  const [seedQuote, setSeedQuote] = useState("");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("choose a pond.");
   const [launched, setLaunched] = useState<Launched | null>(null);
@@ -104,10 +105,8 @@ export default function HatchPage() {
       setMessage("your creature needs a name and ticker.");
       return;
     }
-    if (selected.launch_engine === "raydium-cpmm") {
-      setMessage(
-        "this pond uses the Raydium pool route. add initial creature + pond-token liquidity before launch."
-      );
+    if (selected.launch_engine === "raydium-cpmm" && !seedQuote.trim()) {
+      setMessage("enter how much " + (selected.symbol || "pond token") + " to seed as initial liquidity.");
       return;
     }
 
@@ -132,6 +131,98 @@ export default function HatchPage() {
       });
       const metadata = await metaResponse.json();
       if (!metaResponse.ok) throw new Error(metadata.error || "Could not publish metadata.");
+
+      if (selected.launch_engine === "raydium-cpmm") {
+        setMessage("creating the creature mint...");
+
+        const mintResponse = await fetch("/api/raydium/create-mint", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            baseMint: baseMint.publicKey.toBase58(),
+            payer: publicKey.toBase58(),
+          }),
+        });
+        const mintBuilt = await mintResponse.json();
+        if (!mintResponse.ok) {
+          throw new Error(mintBuilt.error || "Could not build creature mint.");
+        }
+
+        const mintTx = Transaction.from(Buffer.from(mintBuilt.transaction, "base64"));
+        await sendTransaction(mintTx, baseMint);
+
+        setMessage(
+          "mint created · building " +
+            (symbol.trim().toUpperCase() || "CREATURE") +
+            " / " +
+            (selected.symbol || "POND") +
+            " liquidity pool..."
+        );
+
+        const poolResponse = await fetch("/api/raydium/create-pool", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            baseMint: baseMint.publicKey.toBase58(),
+            pondMint: selected.mint,
+            payer: publicKey.toBase58(),
+            creatureLiquidity: "1000000000",
+            quoteLiquidity: seedQuote,
+          }),
+        });
+        const poolBuilt = await poolResponse.json();
+        if (!poolResponse.ok) {
+          throw new Error(poolBuilt.error || "Could not build Raydium pool.");
+        }
+
+        const poolTx = Transaction.from(Buffer.from(poolBuilt.transaction, "base64"));
+        const launchSignature = await sendTransaction(poolTx);
+
+        setMessage("pool confirmed · adding the creature to p0nd...");
+
+        const registerResponse = await fetch("/api/creatures/register-raydium", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            baseMint: baseMint.publicKey.toBase58(),
+            pondMint: selected.mint,
+            pool: poolBuilt.pool,
+            creator: publicKey.toBase58(),
+            name,
+            symbol,
+            description,
+            website,
+            x: xUrl,
+            telegram,
+            metadataUri: metadata.metadataUri,
+            imageUri: metadata.imageUri,
+            launchTx: launchSignature,
+            quoteLiquidity: seedQuote,
+          }),
+        });
+        const registered = await registerResponse.json();
+        if (!registerResponse.ok) {
+          throw new Error(
+            registered.error ||
+              "Pool launched, but p0nd could not register the creature."
+          );
+        }
+
+        setLaunched({
+          baseMint: baseMint.publicKey.toBase58(),
+          pool: poolBuilt.pool,
+          metadataUri: metadata.metadataUri,
+        });
+        await refresh();
+        setMessage(
+          "$" +
+            symbol.trim().toUpperCase() +
+            " is live in the $" +
+            (selected.symbol || "QUOTE") +
+            " pond through Raydium."
+        );
+        return;
+      }
 
       const createResponse = await fetch("/api/dbc/create-pool", {
         method: "POST",
@@ -371,16 +462,43 @@ export default function HatchPage() {
             <h2>{selected ? (symbol || "CREATURE") + " / " + selected.symbol : "pick a pond first"}</h2>
             <p className="muted">
               {selected?.launch_engine === "raydium-cpmm"
-                ? "this pond uses the Raydium fallback. the creature launch needs initial liquidity in both the creature and pond token."
+                ? "this pond uses a Raydium pool. p0nd supplies the full 1B creature supply to the initial pool; you choose how much of the pond token seeds the other side."
                 : "your wallet pays normal Solana account/rent/network costs and becomes the on-chain creator."}
             </p>
+
+            {selected?.launch_engine === "raydium-cpmm" && (
+              <label>
+                <span>{"initial liquidity · " + (selected.symbol || "pond token")}</span>
+                <input
+                  value={seedQuote}
+                  onChange={(e) => setSeedQuote(e.target.value)}
+                  placeholder={"amount in " + (selected.symbol || "pond token")}
+                  inputMode="decimal"
+                />
+                <small>
+                  you need this amount in your wallet. Raydium also charges its on-chain pool-creation cost.
+                </small>
+              </label>
+            )}
+
             <button
               className="big-hatch"
               type="button"
-              disabled={Boolean(busy) || !publicKey || !selected || !name.trim() || !symbol.trim() || selected.launch_engine === "raydium-cpmm"}
+              disabled={
+                Boolean(busy) ||
+                !publicKey ||
+                !selected ||
+                !name.trim() ||
+                !symbol.trim() ||
+                (selected.launch_engine === "raydium-cpmm" && !seedQuote.trim())
+              }
               onClick={() => void hatch()}
             >
-              {busy === "hatch" ? "HATCHING..." : selected?.launch_engine === "raydium-cpmm" ? "ADD LIQUIDITY TO HATCH" : "HATCH CREATURE"}
+              {busy === "hatch"
+                ? "HATCHING..."
+                : selected?.launch_engine === "raydium-cpmm"
+                ? "HATCH + CREATE POOL"
+                : "HATCH CREATURE"}
             </button>
           </div>
         </section>
