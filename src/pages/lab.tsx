@@ -16,6 +16,12 @@ type SetupInfo = {
   feesSponsored: boolean;
 };
 
+type HealthPayload = {
+  ok: boolean;
+  checks: Record<string, { ok: boolean; detail: string }>;
+  checkedAt: string;
+};
+
 type PoolStatus = {
   pool: string;
   baseMint: string;
@@ -56,6 +62,22 @@ export default function HatchPage() {
   const [message, setMessage] = useState(
     "connect a wallet, then prepare the test pond."
   );
+  const [health, setHealth] = useState<HealthPayload | null>(null);
+
+  useEffect(() => {
+    const loadHealth = async () => {
+      try {
+        const response = await fetch("/api/health", { cache: "no-store" });
+        const data = await response.json();
+        setHealth(data as HealthPayload);
+      } catch {
+        setHealth(null);
+      }
+    };
+    void loadHealth();
+    const timer = window.setInterval(() => void loadHealth(), 20_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     try {
@@ -318,6 +340,28 @@ export default function HatchPage() {
             the public flow.
           </p>
         </div>
+
+        <section className="lab-health">
+          <header>
+            <div>
+              <small>PRE-FLIGHT</small>
+              <h2>{health?.ok ? "systems ready" : "checking systems"}</h2>
+            </div>
+            <strong>{health?.ok ? "READY FOR TEST" : "WAIT"}</strong>
+          </header>
+          <div className="lab-health-grid">
+            {["database", "solanaRpc", "indexer", "pinata"].map((key) => {
+              const check = health?.checks?.[key];
+              return (
+                <div key={key} className={check?.ok ? "ok" : "waiting"}>
+                  <span>{key.replace("solanaRpc", "solana rpc")}</span>
+                  <b>{check?.ok ? "OK" : "…"}</b>
+                  <small>{check?.detail || "checking..."}</small>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         {!canSign && (
           <section className="lab-panel dock-panel">
