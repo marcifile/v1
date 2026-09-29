@@ -44,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         [snapshot.baseMint, cluster]
       );
       if (exists.rowCount === 0) {
-        throw new Error("Creature is not registered in POND yet.");
+        throw new Error("Creature is not registered in p0nd yet.");
       }
 
       await client.query(
@@ -69,9 +69,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         `
           UPDATE creatures
           SET status = $2, updated_at = NOW()
-          WHERE mint = $1
+          WHERE mint = $1 AND cluster = $3
         `,
-        [snapshot.baseMint, snapshot.migrated ? "graduated" : "bonding"]
+        [snapshot.baseMint, snapshot.migrated ? "graduated" : "bonding", cluster]
       );
 
       await client.query(
