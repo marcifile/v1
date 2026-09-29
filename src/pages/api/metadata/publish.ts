@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { hasPinata, ipfsGateway, pinFile, pinJson } from "@/lib/pinata";
+import { consumeRateLimit } from "@/lib/rateLimit";
 
 export const config = {
   api: {
@@ -34,6 +35,14 @@ function parseDataUrl(dataUrl: string) {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const rate = consumeRateLimit(req, "metadata-publish", 40, 3600000);
+  if (!rate.ok) {
+    res.setHeader("Retry-After", String(rate.retryAfterSeconds));
+    return res.status(429).json({
+      error: "Too many requests. Try again later.",
+    });
   }
 
   try {
