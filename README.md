@@ -17,6 +17,8 @@ A cozy pixel-world Solana launchpad where new tokens ("creatures") can launch ag
 
 A pond is the quote token. Example: FROG living in the BONK pond is a FROG/BONK DBC pool.
 
+Existing Pump.fun/PumpSwap tokens are valid pond candidates when their Solana mint is compatible with Meteora DBC; users paste the token CA or a link containing it. Pump.fun is not the creature launch engine. Native SOL is also supported as a first-class pond through the wrapped SOL quote mint.
+
 - buy FROG -> BONK enters DBC quote reserve -> visual water level rises
 - sell FROG -> BONK leaves reserve -> water level falls
 - migration quote threshold reached -> eligible for DBC -> DAMM v2 graduation
