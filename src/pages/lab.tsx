@@ -508,3 +508,12 @@ export default function HatchPage() {
     </Shell>
   );
 }
+
+
+export async function getServerSideProps() {
+  const cluster = String(process.env.NEXT_PUBLIC_SOLANA_CLUSTER || "devnet").toLowerCase();
+  if (cluster === "mainnet" || cluster === "mainnet-beta") {
+    return { notFound: true };
+  }
+  return { props: {} };
+}
