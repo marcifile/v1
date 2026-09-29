@@ -1,0 +1,190 @@
+import Link from "next/link";
+import type { WorldPayload } from "@/types/world";
+import { formatBaseUnits } from "@/lib/display";
+
+export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
+  const ponds = world?.ponds ?? [];
+  const creatures = world?.creatures ?? [];
+  const firstPond = ponds[0] ?? null;
+  const residents = firstPond
+    ? creatures.filter((creature) => creature.pond_mint === firstPond.mint)
+    : [];
+
+  return (
+    <div className="concept-stack">
+      <section className="concept-intro">
+        <div className="concept-copy">
+          <span>SO WHAT IS POND?</span>
+          <h2>turn a token into an economy.</h2>
+          <p>
+            Usually a new Solana coin launches against SOL. On POND, it can
+            launch against another existing Solana token instead.
+          </p>
+        </div>
+
+        <div className="pair-compare">
+          <div className="pair-card ordinary">
+            <small>USUAL LAUNCH</small>
+            <div className="pair-line">
+              <strong>SOL</strong><i>↔</i><strong>FROG</strong>
+            </div>
+            <p>the new coin is priced in SOL.</p>
+          </div>
+          <div className="pair-arrow">→</div>
+          <div className="pair-card pond-pair">
+            <small>ON POND</small>
+            <div className="pair-line">
+              <strong>PAID</strong><i>↔</i><strong>FROG</strong>
+            </div>
+            <p>the new coin is priced in PAID.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="concept-grid">
+        <article className="explain-card pond-definition">
+          <span className="explain-no">01</span>
+          <small>THE POND</small>
+          <h3>an existing token</h3>
+          <p>
+            A pond is a supported Solana token used as the quote asset for new
+            launches. BONK can be a pond. PAID can be a pond. USDC can be a
+            pond.
+          </p>
+          <div className="pond-orbit">
+            <div className="pond-core">$PAID</div>
+            <span className="orbit-creature o1">$FROG</span>
+            <span className="orbit-creature o2">$MOTH</span>
+            <span className="orbit-creature o3">$DUCK</span>
+          </div>
+        </article>
+
+        <article className="explain-card creature-definition">
+          <span className="explain-no">02</span>
+          <small>THE CREATURE</small>
+          <h3>a new real token</h3>
+          <p>
+            A creature is a newly created SPL token on the same Solana chain.
+            The only unusual part is what it trades against.
+          </p>
+          <div className="token-slip">
+            <div><small>NEW TOKEN</small><strong>$FROG</strong></div>
+            <div><small>CHAIN</small><strong>SOLANA</strong></div>
+            <div><small>MARKET</small><strong>FROG / PAID</strong></div>
+          </div>
+        </article>
+      </section>
+
+      <section className="water-explainer">
+        <header>
+          <span>WHERE DOES THE POND TOKEN GO?</span>
+          <h2>into the market, not the creator&apos;s pocket.</h2>
+        </header>
+
+        <div className="flow-rail">
+          <div className="flow-node">
+            <small>BUYER</small>
+            <strong>100 PAID</strong>
+          </div>
+          <div className="flow-step">
+            <span>BUY FROG</span><b>→</b>
+          </div>
+          <div className="flow-node reserve-node">
+            <small>DBC RESERVE</small>
+            <strong>+99 PAID</strong>
+            <i>the pond gets deeper</i>
+          </div>
+          <div className="flow-step">
+            <span>RECEIVES</span><b>→</b>
+          </div>
+          <div className="flow-node">
+            <small>BUYER</small>
+            <strong>FROG</strong>
+          </div>
+        </div>
+
+        <p className="flow-footnote">
+          Trading principal sits in the bonding curve as quote reserve. Sells
+          send the pond token back out to sellers. Configured trading fees are
+          separate.
+        </p>
+      </section>
+
+      <section className="why-pond">
+        <div className="why-copy">
+          <span>WHY?</span>
+          <h2>the parent token becomes the local currency.</h2>
+          <p>
+            If people want a creature in the PAID pond, they need PAID. When
+            they sell the creature, they come back out into PAID. Instead of
+            every ecosystem token orbiting SOL, a community can have markets
+            that actually orbit its own token.
+          </p>
+          <Link href="/docs">read the full field manual →</Link>
+        </div>
+
+        <div className="ecosystem-diagram">
+          <div className="eco-token north">$FROG</div>
+          <div className="eco-token west">$SNAIL</div>
+          <div className="eco-core">
+            <small>POND</small>
+            <strong>$PAID</strong>
+          </div>
+          <div className="eco-token east">$DUCK</div>
+          <div className="eco-token south">$MOTH</div>
+          <span className="eco-line n" />
+          <span className="eco-line w" />
+          <span className="eco-line e" />
+          <span className="eco-line s" />
+        </div>
+      </section>
+
+      <section className="live-proof">
+        <header>
+          <div>
+            <span>THIS POND RIGHT NOW</span>
+            <h2>the demo is real devnet state.</h2>
+          </div>
+          <Link href="/hatch">hatch something →</Link>
+        </header>
+
+        <div className="proof-grid">
+          <div>
+            <small>PONDS</small>
+            <strong>{ponds.length}</strong>
+            <span>registered quote-token habitats</span>
+          </div>
+          <div>
+            <small>CREATURES</small>
+            <strong>{creatures.length}</strong>
+            <span>real devnet SPL tokens</span>
+          </div>
+          <div>
+            <small>{firstPond ? "$" + firstPond.symbol + " WATER" : "WATER"}</small>
+            <strong>
+              {firstPond
+                ? formatBaseUnits(
+                    firstPond.quote_reserve_base_units,
+                    firstPond.quote_decimals,
+                    2
+                  )
+                : "0"}
+            </strong>
+            <span>quote reserve across its creatures</span>
+          </div>
+          <div>
+            <small>RESIDENTS</small>
+            <strong>{residents.length}</strong>
+            <span>{firstPond ? "living in $" + firstPond.symbol : "waiting for a pond"}</span>
+          </div>
+        </div>
+
+        <p className="devnet-explain">
+          Devnet means the mechanics are real but the assets have no monetary
+          value. Mainnet stays locked until each pond&apos;s economics and
+          graduation threshold are configured deliberately.
+        </p>
+      </section>
+    </div>
+  );
+}
