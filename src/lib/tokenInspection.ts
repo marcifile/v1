@@ -10,6 +10,7 @@ import {
   getRpcUrl,
   type P0ndCluster,
 } from "@/lib/serverSolana";
+import { NATIVE_SOL_MINT } from "@/lib/addressInput";
 
 type HeliusAsset = {
   content?: {
@@ -120,11 +121,22 @@ export async function inspectToken(
       : Promise.resolve(null),
   ]);
 
+  const isNativeSol = mintInput.equals(NATIVE_SOL_MINT);
+  const dexId = String(market?.dexId || "").toLowerCase();
+  const origin =
+    isNativeSol
+      ? "native-sol"
+      : dexId.includes("pump")
+      ? "pump.fun"
+      : "solana";
+
   const name =
+    (isNativeSol ? "Solana" : null) ||
     asset?.content?.metadata?.name?.trim() ||
     market?.baseName ||
     null;
   const symbol =
+    (isNativeSol ? "SOL" : null) ||
     asset?.content?.metadata?.symbol?.trim() ||
     market?.baseSymbol ||
     null;
@@ -175,6 +187,8 @@ export async function inspectToken(
     priceUsd,
     tokenBadgeExists: Boolean(badge),
     market,
+    origin,
+    isNativeSol,
     launchSupportedNow: standardSpl || Boolean(badge),
     warnings,
     inspectedAt: new Date().toISOString(),
