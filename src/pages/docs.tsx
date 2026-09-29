@@ -66,7 +66,7 @@ const faqs = [
   ],
   [
     "can any random token be a pond?",
-    "Not automatically. p0nd currently accepts standard SPL quote mints that pass compatibility checks, have a reliable USD price, and meet the current market-liquidity floor before they can be opened as ponds.",
+    "Paste a CA and p0nd checks whether the mint can be used as a quote asset. Standard compatible mints can open a pond; special token-program features can still create real compatibility limits.",
   ],
   [
     "does the pond token team automatically receive creature tokens?",
@@ -285,9 +285,9 @@ export default function DocsPage() {
             A pond token already exists before p0nd sees it. Registering a pond
             simply creates/reuses the DBC configuration that lets future
             creatures quote against that mint. Mainnet v1 currently supports
-            standard SPL quote mints that pass compatibility checks, have a
-            reliable USD price, and meet the current $10,000 detected market
-            liquidity floor before a pond opens for launches.
+            compatible quote mints after an on-chain compatibility check. Market
+            price and liquidity are useful context, but p0nd does not require an
+            arbitrary liquidity floor just to register a pond.
           </p>
         </section>
 
@@ -335,8 +335,8 @@ export default function DocsPage() {
           <p>
             p0nd is now configured for Solana mainnet. Opening a pond or hatching a
             creature creates real on-chain accounts and uses real assets. The current
-            pond eligibility floor is $10,000 in detected market liquidity, and the
-            default graduation target is $25,000 of quote reserve. Review the token,
+            launch configuration uses the detected quote asset and a graduation
+            threshold appropriate to that pond. Review the token,
             market, transaction and wallet prompt before signing.
           </p>
         </aside>
