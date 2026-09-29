@@ -69,10 +69,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         quoteMint,
         ...buildDevnetPondCurve(mint.decimals),
       });
-      tx.partialSign(sponsor, config);
       const latest = await connection.getLatestBlockhash("confirmed");
       tx.feePayer = sponsor.publicKey;
       tx.recentBlockhash = latest.blockhash;
+      tx.partialSign(sponsor, config);
       const signature = await connection.sendRawTransaction(tx.serialize(), {
         skipPreflight: false,
         maxRetries: 3,
