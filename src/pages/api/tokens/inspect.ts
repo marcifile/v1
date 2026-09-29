@@ -28,14 +28,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const inspected = await inspectToken(mint, cluster);
     const reasons: string[] = [];
 
-    // P0ND should not invent market/liquidity requirements for becoming a pond.
-    // The real compatibility boundary is whether Meteora can use the mint as a
-    // quote asset. Standard SPL mints work directly; some Token-2022 mints need
-    // a Meteora token badge.
+    // p0nd can route a pond through Meteora DBC or, when Meteora's quote-mint
+    // badge blocks a Token-2022 mint, through a Raydium permissionless pool.
     if (!inspected.launchSupportedNow) {
       reasons.push(
         inspected.tokenProgram === "token-2022"
-          ? "This Token-2022 quote mint needs a Meteora token badge before it can be used as a pond."
+          ? "This Token-2022 mint uses extensions that are not supported by the available permissionless pool routes."
           : "This token program is not supported as a p0nd quote asset."
       );
     }
