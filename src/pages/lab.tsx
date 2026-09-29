@@ -350,7 +350,7 @@ export default function HatchPage() {
             <strong>{health?.ok ? "READY FOR TEST" : "WAIT"}</strong>
           </header>
           <div className="lab-health-grid">
-            {["database", "solanaRpc", "indexer", "pinata"].map((key) => {
+            {["database", "solanaRpc", "indexer", "pinata", "sponsor"].map((key) => {
               const check = health?.checks?.[key];
               return (
                 <div key={key} className={check?.ok ? "ok" : "waiting"}>
