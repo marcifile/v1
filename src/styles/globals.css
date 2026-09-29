@@ -811,3 +811,6 @@ a.field-row:hover{background:#d3dfca}
   background:#c7d4c2;padding:9px 11px;font-size:9px;margin:6px 0 12px
 }
 @media(max-width:620px){.selected-pond-note{flex-direction:column;gap:5px}}
+
+.tape-detail{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.tape-detail a{color:#d5d45b;white-space:nowrap;border-bottom:1px solid #d5d45b}
