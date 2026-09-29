@@ -141,11 +141,14 @@ export async function inspectToken(
   const warnings: string[] = [];
   const standardSpl = account.owner.equals(TOKEN_PROGRAM_ID);
 
-  if (!standardSpl) {
+  if (!standardSpl && !badge) {
     warnings.push(
-      badge
-        ? "Token-2022 quote mint has a Meteora token badge, but p0nd mainnet launch is still limited to standard SPL in v1."
-        : "Token-2022 quote mint is not enabled in p0nd v1."
+      "This Token-2022 mint needs a Meteora quote-token badge before p0nd can use it as a pond."
+    );
+  }
+  if (!standardSpl && badge) {
+    warnings.push(
+      "Token-2022 quote mint is supported because Meteora has a token badge for it."
     );
   }
   if (mintState.freezeAuthority) {
@@ -172,7 +175,7 @@ export async function inspectToken(
     priceUsd,
     tokenBadgeExists: Boolean(badge),
     market,
-    launchSupportedNow: standardSpl,
+    launchSupportedNow: standardSpl || Boolean(badge),
     warnings,
     inspectedAt: new Date().toISOString(),
   };
