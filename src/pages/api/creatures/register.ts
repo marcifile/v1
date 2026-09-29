@@ -8,6 +8,8 @@ type Body = {
   name: string;
   symbol: string;
   metadataUri?: string;
+  imageUri?: string;
+  description?: string;
   launchTx?: string;
   pondName?: string;
   pondSymbol?: string;
@@ -50,8 +52,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await client.query(
         `
           INSERT INTO creatures
-            (mint, pond_mint, pool, config, creator, name, symbol, metadata_uri, launch_tx, status)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+            (mint, pond_mint, pool, config, creator, name, symbol, metadata_uri, image_uri, description, launch_tx, status)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
           ON CONFLICT (mint) DO UPDATE SET
             pool = EXCLUDED.pool,
             config = EXCLUDED.config,
@@ -59,6 +61,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             name = EXCLUDED.name,
             symbol = EXCLUDED.symbol,
             metadata_uri = COALESCE(EXCLUDED.metadata_uri, creatures.metadata_uri),
+            image_uri = COALESCE(EXCLUDED.image_uri, creatures.image_uri),
+            description = COALESCE(EXCLUDED.description, creatures.description),
             launch_tx = COALESCE(EXCLUDED.launch_tx, creatures.launch_tx),
             status = EXCLUDED.status,
             updated_at = NOW()
@@ -72,6 +76,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           body.name.trim().slice(0, 32),
           body.symbol.trim().toUpperCase().slice(0, 10),
           body.metadataUri || null,
+          body.imageUri || null,
+          body.description?.trim().slice(0, 240) || null,
           body.launchTx || null,
           snapshot.migrated ? "graduated" : "bonding",
         ]
