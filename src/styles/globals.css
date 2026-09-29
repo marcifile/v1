@@ -862,3 +862,23 @@ a.field-row:hover{background:#d3dfca}
 .quick-facts>p{font-size:9px;line-height:1.65;color:#c8bac5;margin:14px 0 0}
 @media(max-width:900px){.who-grid{grid-template-columns:1fr}.facts-grid{grid-template-columns:repeat(2,1fr)}.facts-grid>div:nth-child(4n){border-right:1px solid #66576a}.facts-grid>div:nth-child(2n){border-right:0}.facts-grid>div:nth-last-child(-n+4){border-bottom:1px solid #66576a}.facts-grid>div:nth-last-child(-n+2){border-bottom:0}}
 @media(max-width:520px){.facts-grid{grid-template-columns:1fr}.facts-grid>div,.facts-grid>div:nth-child(2n){border-right:0}.facts-grid>div:nth-last-child(-n+2){border-bottom:1px solid #66576a}.facts-grid>div:last-child{border-bottom:0}}
+
+.lab-health{
+  border:var(--line);background:#e5e1d3;box-shadow:5px 5px 0 #9aa589;
+  margin-bottom:16px;
+}
+.lab-health>header{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--ink);color:#eee1cf;padding:11px 14px;
+}
+.lab-health>header small{display:block;font-size:8px;letter-spacing:.12em}
+.lab-health>header h2{font-size:18px;margin:3px 0 0}
+.lab-health>header>strong{font-size:9px;color:#d5d45b}
+.lab-health-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.lab-health-grid>div{padding:12px;border-right:1px solid #8f848a}
+.lab-health-grid>div:last-child{border-right:0}
+.lab-health-grid span{display:block;font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+.lab-health-grid b{display:block;font-size:13px;margin:5px 0}
+.lab-health-grid small{display:block;font-size:8px;line-height:1.4;opacity:.65}
+.lab-health-grid .ok b{color:#557744}.lab-health-grid .waiting b{color:#9a6a38}
+@media(max-width:700px){.lab-health-grid{grid-template-columns:1fr 1fr}.lab-health-grid>div:nth-child(2){border-right:0}.lab-health-grid>div{border-bottom:1px solid #8f848a}}
