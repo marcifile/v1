@@ -42,7 +42,7 @@ const steps = [
 const faqs = [
   [
     "is a creature a real coin?",
-    "Yes. It is a real SPL token and a real Meteora market on the selected Solana cluster. The current site uses devnet, so the assets have no monetary value.",
+    "Yes. It is a real SPL token on Solana and launches through a real Meteora market.",
   ],
   [
     "does the pond token creator receive every buy?",
@@ -50,7 +50,7 @@ const faqs = [
   ],
   [
     "what does the creature creator earn?",
-    "The current devnet DBC config allocates 50% of the creator/partner trading-fee share to the creature creator. Because fees are collected in the quote token, a FROG creator in a PAID pond earns claimable PAID.",
+    "The current launch config assigns a 50% creator share of the DBC trading-fee split. Fees are collected in the quote token, so a FROG creator in a PAID pond earns claimable PAID. This is separate from the quote reserve.",
   ],
   [
     "can one pond have many creatures?",
@@ -66,7 +66,7 @@ const faqs = [
   ],
   [
     "can any random token be a pond?",
-    "Not automatically. Devnet v1 currently accepts standard SPL quote mints. A mainnet version needs explicit support checks, liquidity requirements and a sensible graduation value for each quote token.",
+    "Not automatically. p0nd currently accepts standard SPL quote mints that pass compatibility checks, have a reliable USD price, and meet the current market-liquidity floor before they can be opened as ponds.",
   ],
   [
     "does the pond token team automatically receive creature tokens?",
@@ -78,7 +78,7 @@ const faqs = [
   ],
   [
     "does the pond token issuer have to create the pond?",
-    "The devnet mechanism can register an existing compatible quote mint without changing or controlling that token. Mainnet curation and eligibility policy is deliberately not finalized yet.",
+    "No. Any wallet can open an eligible supported pond once. Opening the pond does not change, control, or take ownership of the existing quote token.",
   ],
   [
     "what happens if the website is down?",
@@ -91,7 +91,7 @@ export default function DocsPage() {
     <Shell>
       <main className="page docs-page">
         <div className="page-title manual-title">
-          <span>FIELD MANUAL · DEVNET V1</span>
+          <span>FIELD MANUAL · MAINNET V1</span>
           <h1>how it flows</h1>
           <p>
             the mechanics, economics and limits — not just the pond metaphor.
@@ -172,7 +172,7 @@ export default function DocsPage() {
             <div><small>CREATURE</small><strong>FROG</strong></div>
           </div>
           <p>
-            The current devnet UI trades directly once your wallet already has
+            The current UI trades directly once your wallet already has
             the pond token. Automatic SOL → pond routing is not shipped yet.
             That is a UX layer, not a different market: the creature itself is
             still FROG/PAID.
@@ -262,18 +262,18 @@ export default function DocsPage() {
 
         <section id="parameters" className="parameter-sheet">
           <header>
-            <small>06 · CURRENT DEVNET PRESET</small>
-            <strong>READ THIS AS A TEST CONFIG, NOT FINAL MAINNET ECONOMICS</strong>
+            <small>06 · CURRENT MAINNET PRESET</small>
+            <strong>CURRENT LAUNCH DEFAULTS · SUBJECT TO CHANGE BEFORE PUBLIC ANNOUNCEMENT</strong>
           </header>
           <div className="parameter-row"><span>creature supply</span><strong>1,000,000,000</strong></div>
           <div className="parameter-row"><span>creature decimals</span><strong>6</strong></div>
           <div className="parameter-row"><span>base trading fee</span><strong>1.00%</strong></div>
           <div className="parameter-row"><span>creator trading-fee percentage</span><strong>50%</strong></div>
           <div className="parameter-row"><span>fee collection</span><strong>quote token</strong></div>
-          <div className="parameter-row"><span>WATER graduation threshold</span><strong>1,000 WATER</strong></div>
+          <div className="parameter-row"><span>graduation target</span><strong>$25,000 quote reserve</strong></div>
           <div className="parameter-row"><span>supply on migration</span><strong>20%</strong></div>
           <div className="parameter-row"><span>migration target</span><strong>Meteora DAMM v2</strong></div>
-          <div className="parameter-row"><span>devnet network/rent</span><strong>sponsored by p0nd</strong></div>
+          <div className="parameter-row"><span>network / account costs</span><strong>paid by the launching wallet</strong></div>
         </section>
 
         <section id="ponds" className="docs-section">
@@ -314,7 +314,7 @@ export default function DocsPage() {
             <li>A weak or illiquid pond token makes every creature inside it harder to trade.</li>
             <li>Quote-token volatility changes the real-world value of a creature&apos;s graduation threshold.</li>
             <li>Liquidity can fragment when many different quote tokens are used.</li>
-            <li>Current devnet buyers need to already hold the pond token; automatic routing is not shipped yet.</li>
+            <li>Buyers need to already hold the pond token; automatic SOL → pond-token routing is not shipped yet.</li>
             <li>Meteora programs and SDK behavior are external dependencies.</li>
             <li>The index can lag briefly; the blockchain remains authoritative.</li>
           </ul>
@@ -331,11 +331,13 @@ export default function DocsPage() {
         </section>
 
         <aside className="manual-warning">
-          <strong>DEVNET RIGHT NOW</strong>
+          <strong>MAINNET V1</strong>
           <p>
-            WATER and the demo creatures have no monetary value. Mainnet remains
-            intentionally locked until pond eligibility, graduation sizing,
-            post-graduation liquidity ownership and fee routing are finalized.
+            p0nd is now configured for Solana mainnet. Opening a pond or hatching a
+            creature creates real on-chain accounts and uses real assets. The current
+            pond eligibility floor is $10,000 in detected market liquidity, and the
+            default graduation target is $25,000 of quote reserve. Review the token,
+            market, transaction and wallet prompt before signing.
           </p>
         </aside>
 
