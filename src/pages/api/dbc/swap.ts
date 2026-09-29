@@ -37,6 +37,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const virtualPool = pool.account;
     const poolState = virtualPool.poolState;
     const config = await client.state.getPoolConfig(poolState.config);
+    if (!config) {
+      return res.status(404).json({ error: "Pond config not found." });
+    }
 
     const baseMintInfo = await getMint(
       connection,
@@ -67,7 +70,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const slot = await connection.getSlot("confirmed");
     const currentPoint =
       Number(config.activationType) === ActivationType.Timestamp
-        ? new BN(String((await connection.getBlockTime(slot)) || Math.floor(Date.now() / 1000)))
+        ? new BN(
+            String(
+              (await connection.getBlockTime(slot)) ||
+                Math.floor(Date.now() / 1000)
+            )
+          )
         : new BN(String(slot));
 
     const slippageBps = Math.min(
