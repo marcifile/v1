@@ -58,9 +58,9 @@ async function indexOne(mint: string) {
     `
       UPDATE creatures
       SET status = $2, updated_at = NOW()
-      WHERE mint = $1
+      WHERE mint = $1 AND cluster = $3
     `,
-    [snapshot.baseMint, snapshot.migrated ? "graduated" : "bonding"]
+    [snapshot.baseMint, snapshot.migrated ? "graduated" : "bonding", CLUSTER]
   );
 
   if (before && String(before.quote_reserve) !== snapshot.quoteReserve) {
