@@ -38,7 +38,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const db = getDb();
 
     const dbResult = await withTimeout(
-      db.query("SELECT (SELECT COUNT(*)::int FROM creatures) AS creatures"),
+      db.query(
+        "SELECT COUNT(*)::int AS creatures FROM creatures WHERE cluster = $1",
+        [cluster]
+      ),
       5000,
       "database query"
     );
@@ -49,12 +52,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     const indexerResult = await withTimeout(
-      db.query(`
-        SELECT
-          (SELECT COUNT(*)::int FROM creatures) AS creature_count,
-          MAX(recorded_at) AS last_snapshot
-        FROM snapshots
-      `),
+      db.query(
+        `
+          SELECT
+            COUNT(DISTINCT c.mint)::int AS creature_count,
+            MAX(s.recorded_at) AS last_snapshot
+          FROM creatures c
+          LEFT JOIN snapshots s ON s.creature_mint = c.mint
+          WHERE c.cluster = $1
+        `,
+        [cluster]
+      ),
       5000,
       "indexer query"
     );
