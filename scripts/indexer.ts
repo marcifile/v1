@@ -112,7 +112,14 @@ async function cycle() {
   await ensureSchema();
   const db = getDb();
   const result = await db.query(
-    "SELECT mint FROM creatures WHERE cluster = $1 ORDER BY created_at ASC",
+    `
+      SELECT c.mint
+      FROM creatures c
+      JOIN ponds p ON p.mint = c.pond_mint
+      WHERE c.cluster = $1
+        AND p.launch_engine = 'meteora-dbc'
+      ORDER BY c.created_at ASC
+    `,
     [CLUSTER]
   );
 
