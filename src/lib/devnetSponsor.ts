@@ -1,9 +1,9 @@
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
-import { getServerConnection } from "@/lib/serverSolana";
+import { getDevnetConnection } from "@/lib/serverSolana";
 
 export async function ensureDevnetSponsor(minSol = 0.25) {
-  const connection = getServerConnection();
+  const connection = getDevnetConnection();
   const sponsor = devnetFaucetKeypair();
   let balance = await connection.getBalance(sponsor.publicKey, "confirmed");
 
