@@ -40,6 +40,7 @@ export async function readCreatureSnapshot(baseMintInput: string) {
     baseMint: state.baseMint.toBase58(),
     pool: pool.publicKey.toBase58(),
     config: state.config.toBase58(),
+    creator: state.creator.toBase58(),
     quoteMint: config.quoteMint.toBase58(),
     quoteDecimals: quoteMintState.decimals,
     quoteReserve: state.quoteReserve.toString(10),
