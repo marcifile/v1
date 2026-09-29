@@ -28,7 +28,8 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "zod": "^3.25.76",
-    "tsx": "^4.20.6"
+    "tsx": "^4.20.6",
+    "@raydium-io/raydium-sdk-v2": "0.2.59-alpha"
   },
   "devDependencies": {
     "@types/bn.js": "^5.2.0",
