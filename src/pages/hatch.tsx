@@ -15,6 +15,19 @@ type Launched = {
   metadataUri: string;
 };
 
+type PondInspection = {
+  mint: string;
+  cluster: string;
+  tokenProgram: string;
+  decimals: number;
+  name: string | null;
+  symbol: string | null;
+  imageUri: string | null;
+  tokenBadgeExists: boolean;
+  launchSupportedNow: boolean;
+  warnings: string[];
+};
+
 function readImage(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -35,6 +48,7 @@ export default function HatchPage() {
   const [pondMint, setPondMint] = useState("");
   const [pondSymbol, setPondSymbol] = useState("");
   const [pondName, setPondName] = useState("");
+  const [pondInspection, setPondInspection] = useState<PondInspection | null>(null);
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [description, setDescription] = useState("");
@@ -108,13 +122,59 @@ export default function HatchPage() {
     }
   };
 
+  const inspectPond = async () => {
+    if (!pondMint.trim()) {
+      setMessage("paste a devnet token mint first.");
+      return null;
+    }
+
+    setBusy("inspect-pond");
+    setMessage("reading that token from devnet...");
+    try {
+      const response = await fetch(
+        "/api/tokens/inspect?cluster=devnet&mint=" +
+          encodeURIComponent(pondMint.trim()),
+        { cache: "no-store" }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Could not inspect token.");
+      }
+
+      const inspected = data as PondInspection;
+      setPondInspection(inspected);
+      if (inspected.symbol) setPondSymbol(inspected.symbol.toUpperCase());
+      if (inspected.name) setPondName(inspected.name);
+      setMessage(
+        inspected.launchSupportedNow
+          ? "token verified · it can be used as a devnet pond."
+          : "token found, but this v1 launch path does not support it yet."
+      );
+      return inspected;
+    } catch (err) {
+      setPondInspection(null);
+      setMessage(err instanceof Error ? err.message : "Could not inspect token.");
+      return null;
+    } finally {
+      setBusy("");
+    }
+  };
+
   const registerPond = async () => {
     if (!pondMint.trim()) {
       setMessage("paste a devnet token mint first.");
       return;
     }
+    let inspected = pondInspection;
+    if (!inspected || inspected.mint !== pondMint.trim()) {
+      inspected = await inspectPond();
+    }
+    if (!inspected || !inspected.launchSupportedNow) {
+      return;
+    }
+
     setBusy("pond");
-    setMessage("checking the water...");
+    setMessage("opening that token as a pond...");
     try {
       const response = await fetch("/api/ponds/register", {
         method: "POST",
@@ -363,15 +423,22 @@ export default function HatchPage() {
             </div>
 
             <details className="register-pond">
-              <summary>register another devnet pond</summary>
+              <summary>register an existing devnet token as a pond</summary>
+              <p className="register-note">
+                this does not mint a new pond token. it verifies an existing token,
+                then creates or reuses the Meteora DBC config creatures can launch against.
+              </p>
               <div className="register-grid">
                 <input
                   placeholder="token mint"
                   value={pondMint}
-                  onChange={(e) => setPondMint(e.target.value)}
+                  onChange={(e) => {
+                    setPondMint(e.target.value);
+                    setPondInspection(null);
+                  }}
                 />
                 <input
-                  placeholder="ticker, e.g. BONK"
+                  placeholder="ticker"
                   value={pondSymbol}
                   onChange={(e) => setPondSymbol(e.target.value.toUpperCase())}
                 />
@@ -382,12 +449,48 @@ export default function HatchPage() {
                 />
                 <button
                   type="button"
-                  disabled={busy === "pond"}
-                  onClick={registerPond}
+                  disabled={busy === "inspect-pond" || busy === "pond"}
+                  onClick={() => void inspectPond()}
                 >
-                  {busy === "pond" ? "checking..." : "Register pond"}
+                  {busy === "inspect-pond" ? "reading..." : "Inspect token"}
                 </button>
               </div>
+
+              {pondInspection && (
+                <div className="pond-inspection">
+                  <div className="pond-inspection-image">
+                    {pondInspection.imageUri ? (
+                      <img src={pondInspection.imageUri} alt="" />
+                    ) : (
+                      <span className="pond-inspection-mark">~</span>
+                    )}
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>token</dt>
+                      <dd>{pondInspection.name || "unknown"} · {"$" + (pondInspection.symbol || "?")}</dd>
+                    </div>
+                    <div><dt>program</dt><dd>{pondInspection.tokenProgram}</dd></div>
+                    <div><dt>decimals</dt><dd>{pondInspection.decimals}</dd></div>
+                    <div><dt>dbc badge</dt><dd>{pondInspection.tokenBadgeExists ? "present" : "not detected"}</dd></div>
+                    <div><dt>v1 launch</dt><dd>{pondInspection.launchSupportedNow ? "supported" : "not supported"}</dd></div>
+                  </dl>
+                  {pondInspection.warnings.length > 0 && (
+                    <ul>
+                      {pondInspection.warnings.map((warning) => (
+                        <li key={warning}>{warning}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <button
+                    type="button"
+                    disabled={!pondInspection.launchSupportedNow || busy === "pond"}
+                    onClick={registerPond}
+                  >
+                    {busy === "pond" ? "opening pond..." : "Register this pond"}
+                  </button>
+                </div>
+              )}
             </details>
           </div>
         </section>
