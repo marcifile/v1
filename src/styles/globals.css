@@ -953,13 +953,13 @@ a.field-row:hover{background:#d3dfca}
 #register-pond{scroll-margin-top:90px}
 
 /* p0nd production brand */
-.brand-icon.brand-logo{
-  overflow:hidden;background:#050605;padding:0;
+.brand-icon.brand-icon.brand-logo{
+  width:38px;height:38px;
+  overflow:visible;background:transparent;padding:0;border:0;box-shadow:none;
 }
 .brand-icon.brand-logo img{
-  width:122px;max-width:none;height:122px;object-fit:contain;
-  transform:translate(-46px,-46px);
-  image-rendering:pixelated;
+  width:38px;height:38px;max-width:none;object-fit:contain;
+  transform:none;image-rendering:pixelated;
 }
 .habitat-token-logo{
   position:absolute;z-index:4;left:50%;top:56%;transform:translate(-50%,-50%);
