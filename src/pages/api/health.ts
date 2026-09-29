@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ensureSchema, getDb } from "@/lib/db";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { getServerConnection } from "@/lib/serverSolana";
+import { getActiveCluster, getServerConnection } from "@/lib/serverSolana";
 import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string) {
@@ -22,6 +22,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  const cluster = getActiveCluster();
 
   const checks = {
     database: { ok: false, detail: "" },
@@ -99,24 +101,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
   }
 
-  try {
-    const connection = getServerConnection();
-    const sponsor = devnetFaucetKeypair();
-    const lamports = await withTimeout(
-      connection.getBalance(sponsor.publicKey, "confirmed"),
-      6000,
-      "sponsor balance"
-    );
-    const sol = lamports / LAMPORTS_PER_SOL;
+  if (cluster === "devnet") {
+    try {
+      const connection = getServerConnection();
+      const sponsor = devnetFaucetKeypair();
+      const lamports = await withTimeout(
+        connection.getBalance(sponsor.publicKey, "confirmed"),
+        6000,
+        "sponsor balance"
+      );
+      const sol = lamports / LAMPORTS_PER_SOL;
+      checks.sponsor = {
+        ok: sol >= 0.05,
+        detail: sol.toFixed(3) + " devnet SOL available",
+      };
+    } catch (error) {
+      checks.sponsor = {
+        ok: false,
+        detail:
+          error instanceof Error ? error.message : "sponsor check failed",
+      };
+    }
+  } else {
     checks.sponsor = {
-      ok: sol >= 0.05,
-      detail: sol.toFixed(3) + " devnet SOL available",
-    };
-  } catch (error) {
-    checks.sponsor = {
-      ok: false,
-      detail:
-        error instanceof Error ? error.message : "sponsor check failed",
+      ok: true,
+      detail: "not used on mainnet · users pay their own Solana fees",
     };
   }
 
@@ -158,8 +167,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   return res.status(criticalOk ? 200 : 503).json({
     ok: criticalOk,
-    service: "pond-web",
-    cluster: process.env.NEXT_PUBLIC_SOLANA_CLUSTER || "devnet",
+    service: "p0nd-web",
+    cluster,
     checks,
     checkedAt: new Date().toISOString(),
   });
