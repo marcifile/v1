@@ -41,7 +41,7 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="app-shell">
       <header className="topbar">
         <Link href="/" className="brand" aria-label="p0nd home">
-          <span className="brand-icon"><span className="brand-pixel" /></span>
+          <span className="brand-icon brand-logo"><img src="/p0nd-logo.png" alt="" /></span>
           <strong>{PROJECT.name}</strong>
         </Link>
 
@@ -58,8 +58,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="topbar-actions">
-          <span className="network-light"><i /> DEVNET</span>
-          <span>SND OFF</span>
+          <span className="network-light"><i /> SOLANA</span>
           {connected && publicKey ? (
             <button type="button" onClick={() => void disconnect()}>
               {shortAddress(publicKey.toBase58(), 4)}
