@@ -17,6 +17,8 @@ type Inspection = {
   tokenProgram: "spl-token" | "token-2022";
   tokenBadgeExists: boolean;
   launchSupportedNow: boolean;
+  origin: "native-sol" | "pump.fun" | "solana";
+  isNativeSol: boolean;
   eligibility: {
     eligible: boolean;
     minimumLiquidityUsd: number;
@@ -65,14 +67,15 @@ export default function OpenPondPage() {
     "paste an existing Solana token. p0nd will verify it before anything is created."
   );
 
-  const inspect = async () => {
-    if (!input.trim()) return;
+  const inspect = async (override?: string) => {
+    const rawInput = (override ?? input).trim();
+    if (!rawInput) return;
     setBusy("inspect");
     setPrepared(null);
     setMessage("checking the token, market and Meteora compatibility...");
     try {
       const response = await fetch(
-        "/api/tokens/inspect?mint=" + encodeURIComponent(input.trim()),
+        "/api/tokens/inspect?mint=" + encodeURIComponent(rawInput),
         { cache: "no-store" }
       );
       const data = await response.json();
@@ -178,8 +181,9 @@ export default function OpenPondPage() {
           <span>OPEN A POND · ONE-TIME REGISTRATION</span>
           <h1>make a token a habitat</h1>
           <p>
-            The token already exists. p0nd does not mint the pond token.
-            It verifies the mint and creates one reusable Meteora quote config.
+            The pond asset already exists. Paste any compatible Solana token — including
+            a Pump.fun token — or use native SOL. p0nd creates the reusable Meteora quote config;
+            it does not re-mint or custody the pond asset.
           </p>
         </div>
 
@@ -214,10 +218,22 @@ export default function OpenPondPage() {
                   setInspection(null);
                   setPrepared(null);
                 }}
-                placeholder="paste mint, Solscan, DexScreener or Axiom link"
+                placeholder="paste CA, Pump.fun, Axiom, DexScreener link — or type SOL"
               />
               <button type="button" disabled={busy === "inspect"} onClick={() => void inspect()}>
                 {busy === "inspect" ? "CHECKING..." : "INSPECT TOKEN"}
+              </button>
+              <button
+                type="button"
+                disabled={busy === "inspect"}
+                onClick={() => {
+                  setInput("SOL");
+                  setInspection(null);
+                  setPrepared(null);
+                  void inspect("SOL");
+                }}
+              >
+                USE SOL
               </button>
             </div>
           </label>
@@ -239,6 +255,7 @@ export default function OpenPondPage() {
                 <div><dt>market liquidity</dt><dd>{money(inspection.market?.liquidityUsd)}</dd></div>
                 <div><dt>market cap</dt><dd>{money(inspection.market?.marketCap)}</dd></div>
                 <div><dt>decimals</dt><dd>{inspection.decimals}</dd></div>
+                <div><dt>source</dt><dd>{inspection.origin === "pump.fun" ? "PUMP.FUN / PUMPSWAP" : inspection.origin === "native-sol" ? "NATIVE SOL" : "SOLANA TOKEN"}</dd></div>
                 <div><dt>token program</dt><dd>{inspection.tokenProgram === "token-2022" ? "TOKEN-2022" : "SPL TOKEN"}</dd></div>
                 <div><dt>Meteora badge</dt><dd>{inspection.tokenProgram === "token-2022" ? (inspection.tokenBadgeExists ? "FOUND" : "MISSING") : "NOT NEEDED"}</dd></div>
                 <div><dt>p0nd</dt><dd>{inspection.eligibility?.eligible ? "ELIGIBLE" : "NOT ELIGIBLE"}</dd></div>
