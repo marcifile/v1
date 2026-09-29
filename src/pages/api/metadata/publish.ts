@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { hasPinata, ipfsGateway, pinFile, pinJson } from "@/lib/pinata";
 import { consumeRateLimit } from "@/lib/rateLimit";
+import { normalizeOptionalHttpUrl } from "@/lib/links";
 
 export const config = {
   api: {
@@ -15,6 +16,9 @@ type Body = {
   name: string;
   symbol: string;
   description?: string;
+  website?: string;
+  x?: string;
+  telegram?: string;
   imageDataUrl?: string;
 };
 
@@ -50,6 +54,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const name = body.name?.trim().slice(0, 32);
     const symbol = body.symbol?.trim().toUpperCase().slice(0, 10);
     const description = (body.description || "").trim().slice(0, 240);
+    const website = normalizeOptionalHttpUrl(body.website, "Website");
+    const xUrl = normalizeOptionalHttpUrl(body.x, "X link");
+    const telegram = normalizeOptionalHttpUrl(body.telegram, "Telegram link");
     const baseMint = String(body.baseMint || "");
 
     if (!baseMint || !name || !symbol) {
@@ -102,11 +109,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       symbol,
       description: description || "A creature living in POND.",
       image: imageUri,
-      external_url: origin + "/creature/" + baseMint,
+      external_url: website || origin + "/creature/" + baseMint,
       attributes: [
         { trait_type: "world", value: "POND" },
         { trait_type: "network", value: "devnet" },
       ],
+      properties: {
+        pond: origin + "/creature/" + baseMint,
+        website,
+        x: xUrl,
+        telegram,
+      },
     };
 
     const metadataCid = await pinJson(
