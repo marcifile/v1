@@ -69,6 +69,18 @@ const faqs = [
     "Not automatically. Devnet v1 currently accepts standard SPL quote mints. A mainnet version needs explicit support checks, liquidity requirements and a sensible graduation value for each quote token.",
   ],
   [
+    "does the pond token team automatically receive creature tokens?",
+    "No. Using PAID or BONK as a quote asset does not automatically transfer FROG to that token's team, and it does not hand them the creature's quote reserve.",
+  ],
+  [
+    "does a real POND market automatically appear on Axiom or DexScreener?",
+    "Not guaranteed. The SPL token and Meteora market are real on chain, but third-party terminals decide which pools they index, display and route.",
+  ],
+  [
+    "does the pond token issuer have to create the pond?",
+    "The devnet mechanism can register an existing compatible quote mint without changing or controlling that token. Mainnet curation and eligibility policy is deliberately not finalized yet.",
+  ],
+  [
     "what happens if the website is down?",
     "The on-chain token and Meteora pool do not disappear. The site is an interface and indexer around on-chain markets; Postgres is not the source of truth.",
   ],
