@@ -33,3 +33,14 @@ export function mediaUrl(value: string | null | undefined) {
   }
   return value;
 }
+
+export function solanaExplorerUrl(
+  kind: "address" | "tx",
+  value: string
+) {
+  const cluster = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || "devnet";
+  const base = "https://explorer.solana.com/" + kind + "/" + value;
+  return cluster === "mainnet" || cluster === "mainnet-beta"
+    ? base
+    : base + "?cluster=" + encodeURIComponent(cluster);
+}
