@@ -37,12 +37,12 @@ export default function App({ Component, pageProps }: AppProps) {
           name="description"
           content="Launch real Solana tokens priced in other Solana tokens."
         />
-        <link rel="icon" type="image/png" href="/favicon.png" />
-        <link rel="apple-touch-icon" href="/p0nd-logo.png" />
+        <link rel="icon" type="image/png" href="/favicon.png?v=2" />
+        <link rel="apple-touch-icon" href="/p0nd-logo.png?v=2" />
         <meta name="theme-color" content="#0b0d0a" />
         <meta property="og:site_name" content="p0nd" />
         <meta property="og:title" content="p0nd" />
-        <meta property="og:image" content="/p0nd-logo.png" />
+        <meta property="og:image" content="/p0nd-logo.png?v=2" />
       </Head>
       <ConnectionProvider endpoint={endpoint}>
         <WalletProvider wallets={wallets} autoConnect>
