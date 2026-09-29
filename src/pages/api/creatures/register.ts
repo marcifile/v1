@@ -31,6 +31,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!body.launchTx) {
       return res.status(400).json({ error: "Missing confirmed launch transaction." });
     }
+    if (snapshot.creator !== body.creator) {
+      return res.status(403).json({
+        error: "Submitted creator does not match the on-chain DBC creator.",
+      });
+    }
 
     const verifiedLaunch = await verifyConfirmedTransaction({
       signature: body.launchTx,
