@@ -13,7 +13,7 @@ const steps = [
     no: "02",
     title: "hatch a creature",
     body:
-      "POND creates a new SPL token and a Meteora Dynamic Bonding Curve configured with the pond token as quote.",
+      "p0nd creates a new SPL token and a Meteora Dynamic Bonding Curve configured with the pond token as quote.",
     example: "FROG / PAID instead of FROG / SOL.",
   },
   {
@@ -73,7 +73,7 @@ const faqs = [
     "No. Using PAID or BONK as a quote asset does not automatically transfer FROG to that token's team, and it does not hand them the creature's quote reserve.",
   ],
   [
-    "does a real POND market automatically appear on Axiom or DexScreener?",
+    "does a real p0nd market automatically appear on Axiom or DexScreener?",
     "Not guaranteed. The SPL token and Meteora market are real on chain, but third-party terminals decide which pools they index, display and route.",
   ],
   [
@@ -118,7 +118,7 @@ export default function DocsPage() {
             <h2>pond: token ↔ coin</h2>
           </div>
           <p>
-            POND is a Solana launchpad where a new token can use another
+            p0nd is a Solana launchpad where a new token can use another
             existing Solana token as its market currency. The existing quote
             token is the <b>pond</b>. New tokens launched against it are
             <b> creatures</b>.
@@ -273,7 +273,7 @@ export default function DocsPage() {
           <div className="parameter-row"><span>WATER graduation threshold</span><strong>1,000 WATER</strong></div>
           <div className="parameter-row"><span>supply on migration</span><strong>20%</strong></div>
           <div className="parameter-row"><span>migration target</span><strong>Meteora DAMM v2</strong></div>
-          <div className="parameter-row"><span>devnet network/rent</span><strong>sponsored by POND</strong></div>
+          <div className="parameter-row"><span>devnet network/rent</span><strong>sponsored by p0nd</strong></div>
         </section>
 
         <section id="ponds" className="docs-section">
@@ -282,7 +282,7 @@ export default function DocsPage() {
             <h2>registration is not the same as creating the pond token.</h2>
           </header>
           <p>
-            A pond token already exists before POND sees it. Registering a pond
+            A pond token already exists before p0nd sees it. Registering a pond
             simply creates/reuses the DBC configuration that lets future
             creatures quote against that mint. Devnet v1 currently supports
             standard SPL quote mints. Mainnet should additionally require
