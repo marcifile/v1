@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { PublicKey } from "@solana/web3.js";
 import {
   getMint,
   TOKEN_PROGRAM_ID,
@@ -11,6 +10,7 @@ import {
   getRpcUrl,
 } from "@/lib/serverSolana";
 import { consumeRateLimit } from "@/lib/rateLimit";
+import { extractSolanaAddress } from "@/lib/addressInput";
 
 type HeliusAsset = {
   interface?: string;
@@ -99,7 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const mint = new PublicKey(String(req.query.mint || ""));
+    const mint = extractSolanaAddress(req.query.mint, "Token mint");
     const cluster =
       String(req.query.cluster || "devnet") === "mainnet"
         ? "mainnet"
