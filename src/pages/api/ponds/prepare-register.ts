@@ -29,9 +29,33 @@ function migrationTargetUsd() {
   return value;
 }
 
-function minPondLiquidityUsd() {
-  const value = Number(process.env.P0ND_MIN_POND_LIQUIDITY_USD || "0");
-  return Number.isFinite(value) && value >= 0 ? value : 0;
+function fallbackSupplyBps() {
+  const value = Number(process.env.P0ND_FALLBACK_MIGRATION_SUPPLY_BPS || "100");
+  return Number.isFinite(value) && value > 0 ? value : 100;
+}
+
+function baseUnitsToTokens(baseUnits: string, decimals: number) {
+  const amount = Number(BigInt(baseUnits));
+  const divisor = 10 ** decimals;
+  const result = amount / divisor;
+  return Number.isFinite(result) && result > 0 ? result : 0;
+}
+
+function fallbackQuoteThreshold(inspected: Awaited<ReturnType<typeof inspectToken>>) {
+  // If a USD price is unavailable, do not reject the pond. DBC only needs a
+  // quote-token threshold, not a USD oracle. Use a small fraction of the quote
+  // token supply as a deterministic fallback. Native SOL gets a practical
+  // fixed fallback because wrapped SOL mint supply is not a useful measure of
+  // SOL's circulating supply.
+  if (inspected.isNativeSol) return 100;
+
+  const supplyTokens = baseUnitsToTokens(
+    inspected.supplyBaseUnits,
+    inspected.decimals
+  );
+  if (supplyTokens <= 0) return 1_000;
+
+  return Math.max(1, supplyTokens * (fallbackSupplyBps() / 10_000));
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -59,26 +83,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    if (cluster === "mainnet") {
-      if (!inspected.priceUsd || inspected.priceUsd <= 0) {
-        return res.status(400).json({
-          error: "A reliable USD price is required before this token can become a pond.",
-          inspection: inspected,
-        });
-      }
-      const liquidity = Number(inspected.market?.liquidityUsd || 0);
-      const minimum = minPondLiquidityUsd();
-      if (liquidity < minimum) {
-        return res.status(400).json({
-          error:
-            "This token does not meet the current pond liquidity floor of $" +
-            minimum.toLocaleString() +
-            ".",
-          inspection: inspected,
-        });
-      }
-    }
-
     await ensureSchema();
     const db = getDb();
     const existing = await db.query(
@@ -99,10 +103,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const configState = await client.state.getPoolConfig(configSigner.publicKey);
 
     const targetUsd = cluster === "mainnet" ? migrationTargetUsd() : null;
+    const hasUsdPrice =
+      cluster === "mainnet" &&
+      Boolean(inspected.priceUsd) &&
+      Number(inspected.priceUsd) > 0;
+
     const thresholdTokens =
-      cluster === "mainnet"
+      cluster === "devnet"
+        ? 1000
+        : hasUsdPrice
         ? targetUsd! / Number(inspected.priceUsd)
-        : 1000;
+        : fallbackQuoteThreshold(inspected);
+
+    const thresholdSource =
+      cluster === "devnet"
+        ? "devnet-fixed"
+        : hasUsdPrice
+        ? "usd-target"
+        : inspected.isNativeSol
+        ? "native-sol-fallback"
+        : "supply-fallback";
 
     if (configState) {
       if (!configState.quoteMint.equals(quoteMint)) {
@@ -186,8 +206,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       cluster,
       inspection: inspected,
       economics: {
-        migrationTargetUsd: targetUsd,
+        migrationTargetUsd: hasUsdPrice ? targetUsd : null,
         migrationQuoteThreshold: thresholdTokens,
+        migrationThresholdSource: thresholdSource,
         tradingFeeBps: 100,
         creatorFeeSharePercent: 50,
       },
