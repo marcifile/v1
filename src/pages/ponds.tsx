@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Shell } from "@/components/Shell";
 import { useWorld } from "@/hooks/useWorld";
-import { formatBaseUnits, shortAddress } from "@/lib/display";
+import { formatBaseUnits, mediaUrl, shortAddress } from "@/lib/display";
 
 export default function PondsPage() {
   const { world, loading, error } = useWorld(12000);
@@ -42,6 +42,9 @@ export default function PondsPage() {
                 <div className="habitat-water" />
                 <span className="habitat-number">POND {String(i + 1).padStart(3, "0")}</span>
                 <span className="habitat-pop">{pond.creature_count} creatures</span>
+                <span className="habitat-token-logo">
+                  <img src={mediaUrl(pond.image_uri)} alt="" />
+                </span>
               </div>
               <div className="habitat-info">
                 <div>
@@ -51,6 +54,8 @@ export default function PondsPage() {
                 </div>
                 <dl>
                   <div><dt>water in curves</dt><dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 4)} {pond.symbol}</dd></div>
+                  <div><dt>market price</dt><dd>{pond.price_usd ? "$" + Number(pond.price_usd).toLocaleString(undefined, { maximumSignificantDigits: 6 }) : "—"}</dd></div>
+                  <div><dt>market liquidity</dt><dd>{pond.liquidity_usd ? "$" + Number(pond.liquidity_usd).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—"}</dd></div>
                   <div><dt>trading fees</dt><dd>{formatBaseUnits(pond.total_trading_quote_fee_base_units, pond.quote_decimals, 4)} {pond.symbol}</dd></div>
                   <div><dt>mint</dt><dd>{shortAddress(pond.mint, 6)}</dd></div>
                   <div><dt>dbc config</dt><dd>{shortAddress(pond.config, 6)}</dd></div>
