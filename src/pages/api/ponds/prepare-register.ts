@@ -30,8 +30,8 @@ function migrationTargetUsd() {
 }
 
 function minPondLiquidityUsd() {
-  const value = Number(process.env.P0ND_MIN_POND_LIQUIDITY_USD || "10000");
-  return Number.isFinite(value) && value >= 0 ? value : 10000;
+  const value = Number(process.env.P0ND_MIN_POND_LIQUIDITY_USD || "0");
+  return Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
