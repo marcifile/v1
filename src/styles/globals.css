@@ -704,3 +704,19 @@ a.field-row:hover{background:#d3dfca}
   .field-search{align-items:stretch;flex-direction:column}.field-search label{min-width:0;width:100%}.field-search>span{text-align:left}
   .creator-vault{grid-template-columns:1fr}.creator-vault-readout{border-left:0;border-top:var(--line);padding-left:0;padding-top:15px}
 }
+
+.creator-economics{
+  display:grid;grid-template-columns:1fr 1.1fr;gap:22px;align-items:center;
+  border:var(--line);background:#d9d7c5;box-shadow:6px 6px 0 #9aa589;padding:22px;
+}
+.creator-economics-copy small{font-size:8px;letter-spacing:.12em}
+.creator-economics-copy h2{font-size:29px;line-height:1;margin:6px 0 9px}
+.creator-economics-copy p{font-size:10px;line-height:1.65;margin:0}
+.creator-economics-copy>span{display:block;margin-top:8px;font-size:8px;opacity:.62}
+.fee-loop{display:grid;grid-template-columns:1fr 42px 1fr 42px 1fr;align-items:center}
+.fee-loop>div{border:var(--line);background:#f0ebdc;padding:15px;text-align:center;min-height:94px;display:flex;flex-direction:column;justify-content:center}
+.fee-loop>div small{font-size:8px;letter-spacing:.08em}.fee-loop>div strong{display:block;margin-top:7px;font-size:13px}
+.fee-loop>.fee-jar{background:var(--gold);box-shadow:3px 3px 0 var(--ink)}
+.fee-loop>b{text-align:center;font-size:20px}
+@media(max-width:900px){.creator-economics{grid-template-columns:1fr}}
+@media(max-width:620px){.fee-loop{grid-template-columns:1fr;gap:7px}.fee-loop>b{transform:rotate(90deg);min-height:28px}}
