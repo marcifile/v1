@@ -7,6 +7,7 @@ import {
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
 import { getServerConnection } from "@/lib/serverSolana";
+import { ensureSchema, getDb } from "@/lib/db";
 
 type Body = {
   config: string;
@@ -35,12 +36,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Missing creature metadata." });
     }
 
+    await ensureSchema();
+    const registeredPond = await getDb().query(
+      "SELECT mint, config FROM ponds WHERE config = $1",
+      [configKey.toBase58()]
+    );
+    if (registeredPond.rowCount === 0) {
+      return res.status(403).json({
+        error: "That DBC config is not a registered POND habitat.",
+      });
+    }
+
     const connection = getServerConnection();
     const client = new DynamicBondingCurveClient(connection, "confirmed");
     const configState = await client.state.getPoolConfig(configKey);
 
     if (!configState) {
       return res.status(404).json({ error: "Pond config not found on devnet." });
+    }
+    if (
+      configState.quoteMint.toBase58() !== String(registeredPond.rows[0].mint)
+    ) {
+      return res.status(409).json({
+        error: "Registered pond does not match the on-chain quote mint.",
+      });
     }
 
     const tokenBadgeState = await client.state
