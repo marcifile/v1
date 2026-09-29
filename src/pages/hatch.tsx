@@ -451,7 +451,7 @@ export default function HatchPage() {
               {loading
                 ? "looking for ponds..."
                 : error ||
-                  "each pond is a real quote token + Meteora DBC config."}
+                  "each pond is one existing quote token + one reusable Meteora DBC config. register it once, then any creature can launch into it."}
             </p>
 
             <div className="pond-picker">
@@ -495,7 +495,7 @@ export default function HatchPage() {
             </div>
 
             <details className="register-pond">
-              <summary>register an existing devnet token as a pond</summary>
+              <summary>register an existing devnet token as a pond · once</summary>
               <p className="register-note">
                 this does not mint a new pond token. it verifies an existing token,
                 then creates or reuses the Meteora DBC config creatures can launch against.
@@ -707,7 +707,7 @@ export default function HatchPage() {
         )}
 
         <div className="lab-message">
-          <small>POND LOG</small>
+          <small>p0nd LOG</small>
           <strong>{message}</strong>
         </div>
 
