@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { hasPinata, ipfsGateway, pinFile, pinJson } from "@/lib/pinata";
 import { consumeRateLimit } from "@/lib/rateLimit";
 import { normalizeOptionalHttpUrl } from "@/lib/links";
+import { getActiveCluster } from "@/lib/serverSolana";
 
 export const config = {
   api: {
@@ -51,6 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const body = req.body as Body;
+    const cluster = getActiveCluster();
     const name = body.name?.trim().slice(0, 32);
     const symbol = body.symbol?.trim().toUpperCase().slice(0, 10);
     const description = (body.description || "").trim().slice(0, 240);
@@ -111,8 +113,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       image: imageUri,
       external_url: website || origin + "/creature/" + baseMint,
       attributes: [
-        { trait_type: "world", value: "POND" },
-        { trait_type: "network", value: "devnet" },
+        { trait_type: "world", value: "p0nd" },
+        { trait_type: "network", value: cluster === "mainnet" ? "mainnet-beta" : "devnet" },
       ],
       properties: {
         pond: origin + "/creature/" + baseMint,
