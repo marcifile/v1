@@ -4,7 +4,7 @@ import { Transaction } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Shell } from "@/components/Shell";
-import { shortAddress } from "@/lib/display";
+import { mediaUrl, shortAddress } from "@/lib/display";
 import { useWorld } from "@/hooks/useWorld";
 
 type Inspection = {
@@ -14,7 +14,14 @@ type Inspection = {
   imageUri: string | null;
   decimals: number;
   priceUsd: number | null;
+  tokenProgram: "spl-token" | "token-2022";
+  tokenBadgeExists: boolean;
   launchSupportedNow: boolean;
+  eligibility: {
+    eligible: boolean;
+    minimumLiquidityUsd: number;
+    reasons: string[];
+  };
   warnings: string[];
   market: {
     liquidityUsd: number | null;
@@ -73,9 +80,12 @@ export default function OpenPondPage() {
       setInspection(data as Inspection);
       setInput(data.mint);
       setMessage(
-        data.launchSupportedNow
+        data.eligibility?.eligible
           ? "token verified · this can become a p0nd habitat."
-          : "token found, but p0nd v1 cannot use it as a quote token yet."
+          : "not eligible yet · " +
+            (data.eligibility?.reasons?.join(" · ") ||
+              data.warnings?.[0] ||
+              "this token cannot be used as a pond right now.")
       );
     } catch (err) {
       setInspection(null);
@@ -90,8 +100,11 @@ export default function OpenPondPage() {
       setVisible(true);
       return;
     }
-    if (!inspection?.launchSupportedNow) {
-      setMessage("inspect a supported token first.");
+    if (!inspection?.eligibility?.eligible) {
+      setMessage(
+        inspection?.eligibility?.reasons?.join(" · ") ||
+          "inspect an eligible token first."
+      );
       return;
     }
 
@@ -212,7 +225,7 @@ export default function OpenPondPage() {
           {inspection && (
             <div className="open-pond-inspection">
               <div className="open-pond-token">
-                {inspection.imageUri ? <img src={inspection.imageUri} alt="" /> : <div>◌</div>}
+                {inspection.imageUri ? <img src={mediaUrl(inspection.imageUri)} alt="" /> : <div>◌</div>}
                 <span>
                   <small>VERIFIED MINT</small>
                   <strong>{"$" + (inspection.symbol || "TOKEN")}</strong>
@@ -226,11 +239,14 @@ export default function OpenPondPage() {
                 <div><dt>market liquidity</dt><dd>{money(inspection.market?.liquidityUsd)}</dd></div>
                 <div><dt>market cap</dt><dd>{money(inspection.market?.marketCap)}</dd></div>
                 <div><dt>decimals</dt><dd>{inspection.decimals}</dd></div>
-                <div><dt>p0nd v1</dt><dd>{inspection.launchSupportedNow ? "SUPPORTED" : "NOT YET"}</dd></div>
+                <div><dt>token program</dt><dd>{inspection.tokenProgram === "token-2022" ? "TOKEN-2022" : "SPL TOKEN"}</dd></div>
+                <div><dt>Meteora badge</dt><dd>{inspection.tokenProgram === "token-2022" ? (inspection.tokenBadgeExists ? "FOUND" : "MISSING") : "NOT NEEDED"}</dd></div>
+                <div><dt>p0nd</dt><dd>{inspection.eligibility?.eligible ? "ELIGIBLE" : "NOT ELIGIBLE"}</dd></div>
               </dl>
 
-              {inspection.warnings.length > 0 && (
+              {(inspection.eligibility?.reasons?.length > 0 || inspection.warnings.length > 0) && (
                 <ul>
+                  {inspection.eligibility?.reasons?.map((reason) => <li key={"eligibility-" + reason}>{reason}</li>)}
                   {inspection.warnings.map((warning) => <li key={warning}>{warning}</li>)}
                 </ul>
               )}
@@ -249,10 +265,16 @@ export default function OpenPondPage() {
           <button
             className="open-pond-button"
             type="button"
-            disabled={Boolean(busy) || !inspection?.launchSupportedNow}
+            disabled={Boolean(busy) || !inspection?.eligibility?.eligible}
             onClick={() => void openPond()}
           >
-            {busy === "open" ? "OPENING POND..." : publicKey ? "OPEN THIS POND" : "CONNECT WALLET TO OPEN"}
+            {busy === "open"
+              ? "OPENING POND..."
+              : inspection && !inspection.eligibility?.eligible
+              ? "TOKEN NOT ELIGIBLE"
+              : publicKey
+              ? "OPEN THIS POND"
+              : "CONNECT WALLET TO OPEN"}
           </button>
 
           <p className="open-pond-note">
