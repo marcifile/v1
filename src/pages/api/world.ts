@@ -32,7 +32,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       db.query(`
         SELECT
           c.mint, c.pond_mint, c.pool, c.config, c.creator,
-          c.name, c.symbol, c.metadata_uri, c.image_uri, c.description, c.launch_tx, c.status, c.created_at,
+          c.name, c.symbol, c.metadata_uri, c.image_uri, c.description,
+          c.website_url, c.x_url, c.telegram_url, c.launch_tx, c.status, c.created_at,
           p.symbol AS pond_symbol,
           p.name AS pond_name,
           p.quote_decimals,
