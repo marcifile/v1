@@ -1,5 +1,5 @@
 export const PROJECT = {
-  name: "pond",
+  name: "p0nd",
   tagline: "coins living in other coins.",
   projectWallet: "o1JFNnUtjJaapQrBYszwpoQhkiwn9DkfpQ6UAQztXbv",
 } as const;
