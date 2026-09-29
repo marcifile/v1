@@ -42,7 +42,7 @@ export default function StatsPage() {
 
         <div className="readout-grid">
           <div><small>PONDS</small><strong>{ponds.length}</strong><span>registered quote-token habitats</span></div>
-          <div><small>CREATURES</small><strong>{creatures.length}</strong><span>real devnet SPL launches</span></div>
+          <div><small>CREATURES</small><strong>{creatures.length}</strong><span>real Solana SPL launches</span></div>
           <div><small>AVG DEPTH</small><strong>{(avgDepth * 100).toFixed(2)}%</strong><span>average curve progress</span></div>
           <div><small>GRADUATED</small><strong>{graduated}</strong><span>made it to deeper water</span></div>
         </div>
