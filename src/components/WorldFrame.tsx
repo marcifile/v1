@@ -144,7 +144,7 @@ export function WorldFrame() {
               ? "$" + (activePond.symbol || "QUOTE") + " POND"
               : "WELCOME TO"}
           </div>
-          <h1>pond</h1>
+          <h1>p0nd</h1>
           <p>launch real coins priced in other coins.</p>
           <div className="hero-actions">
             <Link
