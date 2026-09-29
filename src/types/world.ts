@@ -17,6 +17,8 @@ export type WorldCreature = {
   name: string;
   symbol: string;
   metadata_uri: string | null;
+  image_uri: string | null;
+  description: string | null;
   launch_tx: string | null;
   status: string;
   created_at: string;
