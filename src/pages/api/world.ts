@@ -15,11 +15,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         SELECT
           p.mint, p.symbol, p.name, p.config, p.quote_decimals,
           COUNT(c.mint)::int AS creature_count,
-          COALESCE(SUM(latest.quote_reserve), 0)::text AS quote_reserve_base_units
+          COALESCE(SUM(latest.quote_reserve), 0)::text AS quote_reserve_base_units,
+          COALESCE(SUM(latest.total_trading_quote_fee), 0)::text AS total_trading_quote_fee_base_units
         FROM ponds p
         LEFT JOIN creatures c ON c.pond_mint = p.mint
         LEFT JOIN LATERAL (
-          SELECT s.quote_reserve
+          SELECT s.quote_reserve, s.total_trading_quote_fee
           FROM snapshots s
           WHERE s.creature_mint = c.mint
           ORDER BY s.recorded_at DESC
@@ -39,6 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           COALESCE(latest.migration_threshold, 0)::text AS migration_threshold_base_units,
           COALESCE(latest.progress, 0)::float8 AS progress,
           COALESCE(latest.migrated, false) AS migrated,
+          COALESCE(latest.creator_quote_fee, 0)::text AS creator_quote_fee_base_units,
+          COALESCE(latest.total_trading_quote_fee, 0)::text AS total_trading_quote_fee_base_units,
           latest.recorded_at AS snapshot_at
         FROM creatures c
         JOIN ponds p ON p.mint = c.pond_mint
