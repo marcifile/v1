@@ -672,3 +672,35 @@ a.field-row:hover{background:#d3dfca}
     url("/assets/pond/water-depth.png");
   background-blend-mode:normal,normal,normal,normal,multiply;
 }
+
+/* live economics + field guide search */
+.field-search{
+  display:flex;align-items:end;justify-content:space-between;gap:18px;
+  border:var(--line);border-bottom:0;background:#d9d6c8;padding:10px 12px;
+}
+.field-search label{display:block;min-width:min(420px,60%)}
+.field-search label span{display:block;font-size:8px;letter-spacing:.1em;margin-bottom:4px}
+.field-search input{width:100%;border:var(--line);background:#f0ebdd;padding:9px 10px}
+.field-search>span{font-size:8px;opacity:.6;text-align:right}
+.fee-stat strong{color:#6d3152}
+.fee-stat>span{display:block;margin-top:4px;font-size:8px;opacity:.62}
+.creator-vault{
+  margin-top:18px;display:grid;grid-template-columns:1.25fr .75fr;gap:18px;
+  border:var(--line);background:#c9d5bd;box-shadow:5px 5px 0 #9aa589;padding:18px;
+}
+.creator-vault>div:first-child>small,.creator-vault-readout>small{font-size:8px;letter-spacing:.12em}
+.creator-vault h2{font-size:24px;margin:5px 0 7px}
+.creator-vault p{font-size:10px;line-height:1.6;margin:0;max-width:690px}
+.creator-vault-readout{
+  border-left:var(--line);padding-left:18px;display:flex;flex-direction:column;justify-content:center
+}
+.creator-vault-readout strong{font-size:24px;margin:6px 0 10px}
+.creator-vault-readout button{
+  border:var(--line);background:var(--pink);color:#fff;box-shadow:3px 3px 0 var(--ink);padding:10px;font-weight:700;cursor:pointer
+}
+.creator-vault-readout button:disabled{opacity:.45;cursor:not-allowed}
+.creator-vault-readout>span{font-size:8px;opacity:.65}
+@media(max-width:780px){
+  .field-search{align-items:stretch;flex-direction:column}.field-search label{min-width:0;width:100%}.field-search>span{text-align:left}
+  .creator-vault{grid-template-columns:1fr}.creator-vault-readout{border-left:0;border-top:var(--line);padding-left:0;padding-top:15px}
+}
