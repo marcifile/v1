@@ -60,6 +60,10 @@ export default function StatsPage() {
                   <small>WATER IN CURVES</small>
                   <strong>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 4)} {pond.symbol}</strong>
                 </div>
+                <div className="telemetry-fees">
+                  <small>TRADING FEES</small>
+                  <strong>{formatBaseUnits(pond.total_trading_quote_fee_base_units, pond.quote_decimals, 4)} {pond.symbol}</strong>
+                </div>
                 <div className="telemetry-residents">
                   <small>RESIDENTS</small>
                   <strong>{pond.creature_count}</strong>
