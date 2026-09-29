@@ -91,7 +91,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           </div>
           <div className="flow-node reserve-node">
             <small>DBC RESERVE</small>
-            <strong>+99 PAID</strong>
+            <strong>≈99 PAID</strong>
             <i>the pond gets deeper</i>
           </div>
           <div className="flow-step">
@@ -137,6 +137,22 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <span className="eco-line e" />
           <span className="eco-line s" />
         </div>
+      </section>
+
+      <section className="gravity-strip">
+        <div>
+          <small>THE STRONGEST LOOP</small>
+          <h2>enter through PAID. exit back into PAID.</h2>
+        </div>
+        <div className="gravity-flow">
+          <span>SOL</span><b>→</b><strong>PAID</strong><b>→</b><span>FROG</span><b>→</b><strong>PAID</strong>
+        </div>
+        <p>
+          A creature does not magically guarantee demand for its pond token.
+          But every market inside the pond uses that token as its trading
+          currency, so the whole ecosystem shares one common entry and exit
+          asset instead of routing everything back through SOL.
+        </p>
       </section>
 
       <section className="live-proof">
