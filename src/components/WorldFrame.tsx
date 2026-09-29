@@ -18,20 +18,26 @@ export function WorldFrame() {
   const { world, loading, error } = useWorld(10000);
   const allCreatures = world?.creatures ?? [];
   const ponds = world?.ponds ?? [];
-  const [activeMint, setActiveMint] = useState("");
+  const [activeMint, setActiveMint] = useState("all");
 
   useEffect(() => {
     if (!ponds.length) {
-      setActiveMint("");
+      setActiveMint("all");
       return;
     }
-    if (!activeMint || !ponds.some((pond) => pond.mint === activeMint)) {
-      setActiveMint(ponds[0].mint);
+    if (
+      activeMint !== "all" &&
+      !ponds.some((pond) => pond.mint === activeMint)
+    ) {
+      setActiveMint("all");
     }
   }, [ponds, activeMint]);
 
   const activePond = useMemo(
-    () => ponds.find((pond) => pond.mint === activeMint) ?? ponds[0] ?? null,
+    () =>
+      activeMint === "all"
+        ? null
+        : ponds.find((pond) => pond.mint === activeMint) ?? null,
     [ponds, activeMint]
   );
 
@@ -41,7 +47,7 @@ export function WorldFrame() {
         ? allCreatures.filter(
             (creature) => creature.pond_mint === activePond.mint
           )
-        : [],
+        : allCreatures,
     [allCreatures, activePond]
   );
 
@@ -52,7 +58,7 @@ export function WorldFrame() {
         activePond.quote_decimals,
         2
       )
-    : "0";
+    : "mixed";
 
   return (
     <section className="world-console">
@@ -67,12 +73,12 @@ export function WorldFrame() {
                     ponds.findIndex((pond) => pond.mint === activePond.mint) + 1
                   )
                 ).padStart(3, "0")
-              : "—"}
+              : ponds.length + " TOTAL"}
           </strong>
         </div>
         <div>
           <small>HABITAT</small>
-          <strong>{activePond ? "$" + (activePond.symbol || "QUOTE") : "none"}</strong>
+          <strong>{activePond ? "$" + (activePond.symbol || "QUOTE") : "ALL PONDS"}</strong>
         </div>
         <div>
           <small>RESIDENTS</small>
@@ -81,7 +87,7 @@ export function WorldFrame() {
         <div>
           <small>WATER</small>
           <strong>
-            {waterTotal} {activePond?.symbol ?? ""}
+            {activePond ? waterTotal + " " + (activePond.symbol ?? "") : "mixed quote assets"}
           </strong>
         </div>
         <div className="instrument-scale" aria-hidden="true">
@@ -104,6 +110,14 @@ export function WorldFrame() {
 
         {ponds.length > 0 && (
           <div className="world-pond-tabs" aria-label="Choose pond habitat">
+            <button
+              type="button"
+              className={activeMint === "all" ? "active" : ""}
+              onClick={() => setActiveMint("all")}
+            >
+              <strong>ALL</strong>
+              <small>{allCreatures.length}</small>
+            </button>
             {ponds.slice(0, 6).map((pond) => (
               <button
                 key={pond.mint}
@@ -122,7 +136,7 @@ export function WorldFrame() {
         )}
 
         <div className="featured">
-          <small>CREATURE OF THIS POND</small>
+          <small>{activePond ? "CREATURE OF THIS POND" : "LATEST CREATURE"}</small>
           {featured ? (
             <>
               <strong>{"$" + featured.symbol}</strong>
@@ -142,17 +156,17 @@ export function WorldFrame() {
           <div className="hero-kicker">
             {activePond
               ? "$" + (activePond.symbol || "QUOTE") + " POND"
-              : "WELCOME TO"}
+              : ponds.length + " PONDS · ONE WORLD"}
           </div>
           <h1>p0nd</h1>
           <p>launch real coins priced in other coins.</p>
           <div className="hero-actions">
             <Link
               href={
-                activePond ? "/hatch?pond=" + activePond.mint : "/hatch"
+                activePond ? "/hatch?pond=" + activePond.mint : "/ponds/new"
               }
             >
-              Hatch a creature
+              {activePond ? "Hatch a creature" : "Open a pond"}
             </Link>
             <Link href="/docs">How it flows</Link>
             <Link href="/creatures">
@@ -195,7 +209,7 @@ export function WorldFrame() {
 
         {!loading && ponds.length === 0 && (
           <div className="empty-water">
-            no ponds yet · <Link href="/hatch">open the hatchery</Link>
+            no ponds yet · <Link href="/ponds/new">open the first pond</Link>
           </div>
         )}
 
@@ -208,7 +222,7 @@ export function WorldFrame() {
               ? "$" +
                 (activePond.symbol || "QUOTE") +
                 " is the currency for every creature shown here"
-              : "choose a habitat"}
+              : "all habitats together · each creature keeps its own pond currency"}
           </strong>
         </div>
       </div>
