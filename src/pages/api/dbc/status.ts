@@ -4,14 +4,32 @@ import { getMint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { baseUnitsToHuman } from "@/lib/units";
 import { getServerConnection } from "@/lib/serverSolana";
+import { ensureSchema, getDb } from "@/lib/db";
+import { consumeRateLimit } from "@/lib/rateLimit";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const rate = consumeRateLimit(req, "dbc-status", 240, 60 * 60 * 1000);
+  if (!rate.ok) {
+    res.setHeader("Retry-After", String(rate.retryAfterSeconds));
+    return res.status(429).json({ error: "Too many status reads. Try again later." });
+  }
+
   try {
     const baseMint = new PublicKey(String(req.query.baseMint || ""));
+
+    await ensureSchema();
+    const registered = await getDb().query(
+      "SELECT mint FROM creatures WHERE mint = $1",
+      [baseMint.toBase58()]
+    );
+    if (registered.rowCount === 0) {
+      return res.status(404).json({ error: "Creature is not registered in POND." });
+    }
+
     const connection = getServerConnection();
     const client = new DynamicBondingCurveClient(connection, "confirmed");
     const pool = await client.state.getPoolByBaseMint(baseMint);
