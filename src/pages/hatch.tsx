@@ -293,27 +293,45 @@ export default function HatchPage() {
       const tx = Transaction.from(Buffer.from(built.transaction, "base64"));
       const launchSignature = await sendPartiallySigned(tx, baseMint);
 
-      const registerResponse = await fetch("/api/creatures/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      let registerResponse: Response | null = null;
+      let registered: any = null;
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        registerResponse = await fetch("/api/creatures/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            baseMint: built.baseMint,
+            creator: publicKey.toBase58(),
+            name,
+            symbol,
+            description,
+            metadataUri: metadata.metadataUri,
+            imageUri: metadata.imageUri,
+            launchTx: launchSignature,
+            pondName: selected.name,
+            pondSymbol: selected.symbol,
+          }),
+        });
+        registered = await registerResponse.json();
+        if (registerResponse.ok) break;
+        if (attempt < 2) {
+          await new Promise((resolve) =>
+            window.setTimeout(resolve, 900 * (attempt + 1))
+          );
+        }
+      }
+
+      if (!registerResponse?.ok) {
+        setLaunched({
           baseMint: built.baseMint,
-          creator: publicKey.toBase58(),
-          name,
-          symbol,
-          description,
+          pool: built.pool,
           metadataUri: metadata.metadataUri,
-          imageUri: metadata.imageUri,
-          launchTx: launchSignature,
-          pondName: selected.name,
-          pondSymbol: selected.symbol,
-        }),
-      });
-      const registered = await registerResponse.json();
-      if (!registerResponse.ok) {
+        });
         throw new Error(
-          "Launched on-chain, but POND indexing failed: " +
-            (registered.error || "unknown error")
+          "Creature launched on-chain, but the POND index could not catch it yet: " +
+            (registered?.error || "unknown error") +
+            ". Keep this page open and use the creature mint shown below."
         );
       }
 
