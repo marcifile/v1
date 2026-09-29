@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import type { AppProps } from "next/app";
 import Head from "next/head";
 import {
@@ -28,6 +28,24 @@ export default function App({ Component, pageProps }: AppProps) {
     () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
     []
   );
+
+  useEffect(() => {
+    // Previous versions of p0nd registered a service worker. It can leave stale
+    // Next.js HTML/chunks behind after deploys, which makes the page render but
+    // leaves buttons inert. Clean it up permanently.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          void registration.unregister();
+        }
+      });
+    }
+    if ("caches" in window) {
+      caches.keys().then((keys) => {
+        for (const key of keys) void caches.delete(key);
+      });
+    }
+  }, []);
 
   return (
     <>
