@@ -7,6 +7,7 @@ import {
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
+import { WorldProvider } from "@/hooks/useWorld";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "@/styles/globals.css";
 
@@ -25,7 +26,9 @@ export default function App({ Component, pageProps }: AppProps) {
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
-          <Component {...pageProps} />
+          <WorldProvider>
+            <Component {...pageProps} />
+          </WorldProvider>
         </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
