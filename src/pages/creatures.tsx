@@ -5,20 +5,38 @@ import { Shell } from "@/components/Shell";
 import { useWorld } from "@/hooks/useWorld";
 import { formatBaseUnits, mediaUrl, shortAddress } from "@/lib/display";
 
-type Filter = "new" | "deep" | "near" | "mine";
+type Filter = "new" | "trending" | "deep" | "near" | "mine";
 
 export default function CreaturesPage() {
   const { world, loading, error } = useWorld(10000);
   const { publicKey } = useWallet();
   const [filter, setFilter] = useState<Filter>("new");
+  const [search, setSearch] = useState("");
 
   const creatures = useMemo(() => {
-    const all = [...(world?.creatures ?? [])];
+    const query = search.trim().toLowerCase();
+    const all = [...(world?.creatures ?? [])].filter((creature) => {
+      if (!query) return true;
+      return (
+        creature.symbol.toLowerCase().includes(query) ||
+        creature.name.toLowerCase().includes(query) ||
+        creature.mint.toLowerCase().includes(query) ||
+        (creature.pond_symbol || "").toLowerCase().includes(query)
+      );
+    });
 
     if (filter === "mine") {
       return publicKey
         ? all.filter((c) => c.creator === publicKey.toBase58())
         : [];
+    }
+
+    if (filter === "trending") {
+      return all.sort((a, b) => {
+        const av = BigInt(a.total_trading_quote_fee_base_units || "0");
+        const bv = BigInt(b.total_trading_quote_fee_base_units || "0");
+        return av === bv ? 0 : av > bv ? -1 : 1;
+      });
     }
 
     if (filter === "near") {
@@ -35,7 +53,7 @@ export default function CreaturesPage() {
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-  }, [world, filter, publicKey]);
+  }, [world, filter, publicKey, search]);
 
   return (
     <Shell>
@@ -48,10 +66,23 @@ export default function CreaturesPage() {
 
         <div className="filter-strip">
           <button className={filter === "new" ? "active" : ""} onClick={() => setFilter("new")}>NEW</button>
+          <button className={filter === "trending" ? "active" : ""} onClick={() => setFilter("trending")}>TRENDING</button>
           <button className={filter === "deep" ? "active" : ""} onClick={() => setFilter("deep")}>DEEP PONDS</button>
           <button className={filter === "near" ? "active" : ""} onClick={() => setFilter("near")}>NEAR GRADUATION</button>
           <button className={filter === "mine" ? "active" : ""} onClick={() => setFilter("mine")}>MINE</button>
           <span>{creatures.length} SPECIMENS</span>
+        </div>
+
+        <div className="field-search">
+          <label>
+            <span>SEARCH</span>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="ticker, name, pond or mint"
+            />
+          </label>
+          <span>trending ranks by real on-chain quote-token trading fees</span>
         </div>
 
         <div className="field-table">
