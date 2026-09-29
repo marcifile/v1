@@ -53,6 +53,9 @@ export default function HatchPage() {
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [description, setDescription] = useState("");
+  const [website, setWebsite] = useState("");
+  const [xUrl, setXUrl] = useState("");
+  const [telegram, setTelegram] = useState("");
   const [imageDataUrl, setImageDataUrl] = useState("");
   const [firstBuy, setFirstBuy] = useState("10");
   const [busy, setBusy] = useState("");
@@ -266,6 +269,9 @@ export default function HatchPage() {
           name,
           symbol,
           description,
+          website,
+          x: xUrl,
+          telegram,
           imageDataUrl: imageDataUrl || undefined,
         }),
       });
@@ -307,6 +313,9 @@ export default function HatchPage() {
             name,
             symbol,
             description,
+            website,
+            x: xUrl,
+            telegram,
             metadataUri: metadata.metadataUri,
             imageUri: metadata.imageUri,
             launchTx: launchSignature,
@@ -593,6 +602,22 @@ export default function HatchPage() {
                     placeholder="sleeps under the lily pads."
                   />
                 </label>
+
+                <details className="creature-links">
+                  <summary>links · optional</summary>
+                  <label>
+                    <span>website</span>
+                    <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
+                  </label>
+                  <label>
+                    <span>x</span>
+                    <input value={xUrl} onChange={(e) => setXUrl(e.target.value)} placeholder="x.com/..." />
+                  </label>
+                  <label>
+                    <span>telegram</span>
+                    <input value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="t.me/..." />
+                  </label>
+                </details>
               </div>
 
               <label className="image-drop">
