@@ -1,0 +1,93 @@
+name: Production smoke test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: pond-production-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Wait for Railway deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://v1-production-76b1.up.railway.app"
+          for attempt in $(seq 1 24); do
+            code=$(curl -L -sS -o /tmp/home.html -w "%{http_code}" "$BASE/" || true)
+            if [ "$code" = "200" ] && grep -qi "pond" /tmp/home.html; then
+              echo "Railway is serving the app."
+              exit 0
+            fi
+            echo "attempt $attempt: HTTP $code; waiting..."
+            sleep 10
+          done
+          echo "Railway never became ready."
+          exit 1
+
+      - name: Check public pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://v1-production-76b1.up.railway.app"
+          for route in / /creatures /ponds /hatch /docs /stats /log /lab; do
+            code=$(curl -L -sS -o /tmp/page.html -w "%{http_code}" "$BASE$route")
+            echo "$route -> $code"
+            test "$code" = "200"
+            grep -qi "pond" /tmp/page.html
+          done
+
+      - name: Check live world API
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://v1-production-76b1.up.railway.app"
+          curl -fsSL "$BASE/api/world" -o /tmp/world.json
+          node - <<'NODE'
+          const fs = require("fs");
+          const world = JSON.parse(fs.readFileSync("/tmp/world.json", "utf8"));
+          if (!Array.isArray(world.ponds)) throw new Error("ponds missing");
+          if (!Array.isArray(world.creatures)) throw new Error("creatures missing");
+          if (!Array.isArray(world.events)) throw new Error("events missing");
+          console.log({
+            ponds: world.ponds.length,
+            creatures: world.creatures.length,
+            events: world.events.length,
+          });
+          NODE
+
+      - name: Check full production preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://v1-production-76b1.up.railway.app"
+          ok=0
+          for attempt in $(seq 1 6); do
+            code=$(curl -sS -o /tmp/health.json -w "%{http_code}" "$BASE/api/health" || true)
+            cat /tmp/health.json || true
+            echo
+            if [ "$code" = "200" ]; then
+              ok=1
+              break
+            fi
+            echo "health attempt $attempt returned $code; retrying..."
+            sleep 10
+          done
+          test "$ok" = "1"
+          node - <<'NODE'
+          const fs = require("fs");
+          const health = JSON.parse(fs.readFileSync("/tmp/health.json", "utf8"));
+          if (health.ok !== true) throw new Error("health.ok is false");
+          for (const key of ["database", "solanaRpc", "indexer", "pinata", "sponsor"]) {
+            if (health.checks?.[key]?.ok !== true) {
+              throw new Error(key + " preflight failed: " + JSON.stringify(health.checks?.[key]));
+            }
+          }
+          console.log("Full POND preflight passed:", health.checks);
+          NODE
