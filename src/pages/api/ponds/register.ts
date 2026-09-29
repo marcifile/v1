@@ -9,6 +9,7 @@ import { ensureDevnetSponsor, parsePublicKey } from "@/lib/devnetSponsor";
 import { buildDevnetPondCurve } from "@/lib/dbcPreset";
 import { ensureSchema, getDb } from "@/lib/db";
 import { POND_PROJECT_WALLET } from "@/lib/serverSolana";
+import { consumeRateLimit } from "@/lib/rateLimit";
 
 type Body = {
   mint: string;
@@ -19,6 +20,14 @@ type Body = {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const rate = consumeRateLimit(req, "pond-register", 12, 3600000);
+  if (!rate.ok) {
+    res.setHeader("Retry-After", String(rate.retryAfterSeconds));
+    return res.status(429).json({
+      error: "Too many requests. Try again later.",
+    });
   }
 
   try {
