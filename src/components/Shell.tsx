@@ -1,8 +1,17 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { PROJECT, ROUTES } from "@/lib/project";
 
+function shortAddress(address: string) {
+  return address.slice(0, 4) + "…" + address.slice(-4);
+}
+
 export function Shell({ children }: { children: ReactNode }) {
+  const { publicKey, connected, disconnect } = useWallet();
+  const { setVisible } = useWalletModal();
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -16,8 +25,17 @@ export function Shell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="topbar-actions">
+          <span>DEVNET</span>
           <span>SND OFF</span>
-          <button type="button">Connect</button>
+          {connected && publicKey ? (
+            <button type="button" onClick={() => void disconnect()}>
+              {shortAddress(publicKey.toBase58())}
+            </button>
+          ) : (
+            <button type="button" onClick={() => setVisible(true)}>
+              Connect
+            </button>
+          )}
         </div>
       </header>
       {children}
