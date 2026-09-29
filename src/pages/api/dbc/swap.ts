@@ -8,7 +8,7 @@ import {
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { baseUnitsToHuman, humanToBaseUnits } from "@/lib/units";
 import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
-import { getServerConnection } from "@/lib/serverSolana";
+import { getActiveCluster, getServerConnection } from "@/lib/serverSolana";
 import { ensureSchema, getDb } from "@/lib/db";
 import { consumeRateLimit } from "@/lib/rateLimit";
 
@@ -37,18 +37,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const body = req.body as Body;
     const baseMint = new PublicKey(body.baseMint);
     const owner = new PublicKey(body.owner);
+    const cluster = getActiveCluster();
     await ensureSchema();
     const registered = await getDb().query(
-      "SELECT mint FROM creatures WHERE mint = $1",
-      [baseMint.toBase58()]
+      "SELECT mint FROM creatures WHERE mint = $1 AND cluster = $2",
+      [baseMint.toBase58(), cluster]
     );
     if (registered.rowCount === 0) {
       return res.status(403).json({
-        error: "That token is not a registered POND creature.",
+        error: "That token is not a registered p0nd creature.",
       });
     }
 
-    const sponsor = devnetFaucetKeypair();
+    const sponsor = cluster === "devnet" ? devnetFaucetKeypair() : null;
     const connection = getServerConnection();
     const client = new DynamicBondingCurveClient(connection, "confirmed");
 
@@ -113,7 +114,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const tx = await client.pool.swap({
       owner,
-      payer: sponsor.publicKey,
+      payer: sponsor?.publicKey || owner,
       pool: pool.publicKey,
       amountIn,
       minimumAmountOut: quote.minimumAmountOut,
@@ -122,9 +123,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const latest = await connection.getLatestBlockhash("confirmed");
-    tx.feePayer = sponsor.publicKey;
+    tx.feePayer = sponsor?.publicKey || owner;
     tx.recentBlockhash = latest.blockhash;
-    tx.partialSign(sponsor);
+    if (sponsor) tx.partialSign(sponsor);
 
     return res.status(200).json({
       transaction: tx
@@ -139,7 +140,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         outputDecimals
       ),
       tradingFeeBaseUnits: quote.tradingFee.toString(10),
-      sponsored: true,
+      sponsored: Boolean(sponsor),
+      cluster,
       lastValidBlockHeight: latest.lastValidBlockHeight,
     });
   } catch (error) {
