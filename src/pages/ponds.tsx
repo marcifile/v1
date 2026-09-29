@@ -13,7 +13,23 @@ export default function PondsPage() {
         <div className="page-title manual-title">
           <span>HABITAT INDEX · LIVE REGISTRY</span>
           <h1>ponds</h1>
-          <p>{loading ? "looking for water..." : error || "tokens that creatures can live in."}</p>
+          <p>
+            {loading
+              ? "looking for water..."
+              : error ||
+                "existing Solana tokens used as the trading currency for creature markets."}
+          </p>
+          <div className="heading-actions">
+            <Link href="/hatch">register / choose a pond →</Link>
+          </div>
+        </div>
+
+        <div className="ponds-explain-strip">
+          <div><small>A POND IS</small><strong>an existing token</strong></div>
+          <b>→</b>
+          <div><small>CREATURES INSIDE IT TRADE AS</small><strong>FROG / POND TOKEN</strong></div>
+          <b>→</b>
+          <div><small>ONE POND CAN HOLD</small><strong>many creature markets</strong></div>
         </div>
 
         <div className="habitat-grid">
