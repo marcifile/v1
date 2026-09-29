@@ -38,6 +38,10 @@ export async function ensureSchema() {
           name TEXT,
           config TEXT UNIQUE NOT NULL,
           quote_decimals INTEGER NOT NULL DEFAULT 0,
+          image_uri TEXT,
+          price_usd DOUBLE PRECISION,
+          liquidity_usd DOUBLE PRECISION,
+          market_cap_usd DOUBLE PRECISION,
           cluster TEXT NOT NULL DEFAULT 'devnet',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -68,6 +72,10 @@ export async function ensureSchema() {
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS description TEXT;
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS website_url TEXT;
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS x_url TEXT;
+        ALTER TABLE ponds ADD COLUMN IF NOT EXISTS image_uri TEXT;
+        ALTER TABLE ponds ADD COLUMN IF NOT EXISTS price_usd DOUBLE PRECISION;
+        ALTER TABLE ponds ADD COLUMN IF NOT EXISTS liquidity_usd DOUBLE PRECISION;
+        ALTER TABLE ponds ADD COLUMN IF NOT EXISTS market_cap_usd DOUBLE PRECISION;
         ALTER TABLE ponds ADD COLUMN IF NOT EXISTS cluster TEXT NOT NULL DEFAULT 'devnet';
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS telegram_url TEXT;
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS cluster TEXT NOT NULL DEFAULT 'devnet';
