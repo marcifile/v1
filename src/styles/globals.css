@@ -781,3 +781,19 @@ a.field-row:hover{background:#d3dfca}
   .pond-inspection>button,.pond-inspection ul{grid-column:1/-1}
   .pond-inspection dl{grid-template-columns:1fr}
 }
+
+/* live fee columns */
+.telemetry-card{grid-template-columns:1.05fr 1.1fr 1.1fr .75fr .75fr}
+.telemetry-fees small{display:block;font-size:8px;opacity:.62}
+.telemetry-fees strong{display:block;margin-top:4px}
+.pond-resident-row{grid-template-columns:76px 1.1fr .65fr .9fr 120px}
+@media(max-width:900px){
+  .telemetry-card{grid-template-columns:1fr 1fr}
+  .pond-resident-row{grid-template-columns:65px 1fr 90px 130px}
+  .pond-resident-row>span:last-child{display:none}
+}
+@media(max-width:620px){
+  .telemetry-card{grid-template-columns:1fr}
+  .pond-resident-row{grid-template-columns:60px 1fr 90px}
+  .pond-resident-row>span:nth-last-child(-n+2){display:none}
+}
