@@ -1,6 +1,8 @@
 import { PublicKey } from "@solana/web3.js";
 import {
   getMint,
+  getExtensionTypes,
+  ExtensionType,
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
@@ -152,15 +154,47 @@ export async function inspectToken(
 
   const warnings: string[] = [];
   const standardSpl = account.owner.equals(TOKEN_PROGRAM_ID);
+  const extensionNames = standardSpl
+    ? []
+    : getExtensionTypes(mintState.tlvData).map(
+        (extension) =>
+          (ExtensionType as unknown as Record<number, string>)[extension] ||
+          String(extension)
+      );
 
-  if (!standardSpl && !badge) {
+  const raydiumBlockedExtensions = extensionNames.filter(
+    (name) =>
+      name === "PermanentDelegate" ||
+      name === "NonTransferable" ||
+      name === "DefaultAccountState" ||
+      name.startsWith("Confidential")
+  );
+
+  const meteoraSupported = standardSpl || Boolean(badge);
+  const raydiumSupported =
+    standardSpl || raydiumBlockedExtensions.length === 0;
+
+  const launchEngine = meteoraSupported
+    ? "meteora-dbc"
+    : raydiumSupported
+    ? "raydium-cpmm"
+    : null;
+
+  if (!standardSpl && !badge && raydiumSupported) {
     warnings.push(
-      "This Token-2022 mint needs a Meteora quote-token badge before p0nd can use it as a pond."
+      "Meteora DBC needs a quote-token badge for this mint, so p0nd will use the Raydium pool route instead."
     );
   }
   if (!standardSpl && badge) {
     warnings.push(
-      "Token-2022 quote mint is supported because Meteora has a token badge for it."
+      "Token-2022 quote mint has a Meteora token badge, so the bonding-curve route is available."
+    );
+  }
+  if (raydiumBlockedExtensions.length > 0) {
+    warnings.push(
+      "This Token-2022 mint uses extensions Raydium does not allow for permissionless pools: " +
+        raydiumBlockedExtensions.join(", ") +
+        "."
     );
   }
   if (mintState.freezeAuthority) {
@@ -189,7 +223,11 @@ export async function inspectToken(
     market,
     origin,
     isNativeSol,
-    launchSupportedNow: standardSpl || Boolean(badge),
+    tokenExtensions: extensionNames,
+    meteoraSupported,
+    raydiumSupported,
+    launchEngine,
+    launchSupportedNow: Boolean(launchEngine),
     warnings,
     inspectedAt: new Date().toISOString(),
   };
