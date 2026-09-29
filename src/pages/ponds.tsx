@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { Shell } from "@/components/Shell";
 import { useWorld } from "@/hooks/useWorld";
-import { formatBaseUnits } from "@/lib/display";
+import { formatBaseUnits, shortAddress } from "@/lib/display";
 
 export default function PondsPage() {
   const { world, loading, error } = useWorld(12000);
@@ -8,34 +9,42 @@ export default function PondsPage() {
 
   return (
     <Shell>
-      <main className="page">
-        <div className="page-title">
-          <span>HABITATS · LIVE REGISTRY</span>
+      <main className="page habitats-page">
+        <div className="page-title manual-title">
+          <span>HABITAT INDEX · LIVE REGISTRY</span>
           <h1>ponds</h1>
-          <p>{loading ? "looking for water..." : error || "quote tokens with creatures living in them."}</p>
+          <p>{loading ? "looking for water..." : error || "tokens that creatures can live in."}</p>
         </div>
 
-        {ponds.length === 0 && !loading ? (
-          <div className="empty-state">no ponds registered yet.</div>
-        ) : (
-          <div className="guide-grid">
-            {ponds.map((pond, i) => (
-              <article className="field-card" key={pond.mint}>
-                <small>{"POND " + String(i + 1).padStart(3, "0")}</small>
-                <div className="pond-circle">~</div>
-                <h2>{"$" + (pond.symbol || "QUOTE")}</h2>
-                <p>{pond.name || pond.mint}</p>
+        <div className="habitat-grid">
+          {ponds.map((pond, i) => (
+            <Link className="habitat-card" key={pond.mint} href={"/pond/" + pond.mint}>
+              <div className="habitat-scene">
+                <div className="habitat-sky" />
+                <div className="habitat-horizon" />
+                <div className="habitat-water" />
+                <span className="habitat-number">POND {String(i + 1).padStart(3, "0")}</span>
+                <span className="habitat-pop">{pond.creature_count} creatures</span>
+              </div>
+              <div className="habitat-info">
+                <div>
+                  <small>HABITAT</small>
+                  <h2>{"$" + (pond.symbol || "QUOTE")}</h2>
+                  <p>{pond.name || "unnamed water"}</p>
+                </div>
                 <dl>
-                  <div><dt>creatures</dt><dd>{pond.creature_count}</dd></div>
-                  <div>
-                    <dt>water in curves</dt>
-                    <dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 4)}</dd>
-                  </div>
-                  <div><dt>mint</dt><dd>{pond.mint.slice(0, 5)}…{pond.mint.slice(-5)}</dd></div>
+                  <div><dt>water in curves</dt><dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 4)}</dd></div>
+                  <div><dt>mint</dt><dd>{shortAddress(pond.mint, 6)}</dd></div>
+                  <div><dt>dbc config</dt><dd>{shortAddress(pond.config, 6)}</dd></div>
                 </dl>
-              </article>
-            ))}
-          </div>
+                <span className="habitat-action">OPEN HABITAT →</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {!loading && ponds.length === 0 && (
+          <div className="field-empty">no habitats have been registered yet.</div>
         )}
       </main>
     </Shell>

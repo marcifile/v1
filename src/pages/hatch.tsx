@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Keypair, Transaction } from "@solana/web3.js";
+import { useRouter } from "next/router";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Shell } from "@/components/Shell";
@@ -24,6 +25,7 @@ function readImage(file: File) {
 }
 
 export default function HatchPage() {
+  const router = useRouter();
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   const { setVisible } = useWalletModal();
@@ -47,6 +49,15 @@ export default function HatchPage() {
     () => ponds.find((pond) => pond.mint === selectedMint) ?? null,
     [ponds, selectedMint]
   );
+
+  useEffect(() => {
+    const requested = String(router.query.pond || "");
+    if (requested && ponds.some((pond) => pond.mint === requested)) {
+      setSelectedMint(requested);
+    } else if (!selectedMint && ponds.length === 1) {
+      setSelectedMint(ponds[0].mint);
+    }
+  }, [router.query.pond, ponds, selectedMint]);
 
   const sendPartiallySigned = useCallback(
     async (transaction: Transaction, signer?: Keypair) => {

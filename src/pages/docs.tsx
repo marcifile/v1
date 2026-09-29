@@ -1,15 +1,35 @@
 import { Shell } from "@/components/Shell";
 
+const notes = [
+  ["01", "pick a pond", "A pond is an existing Solana token used as the quote asset for a creature’s Meteora Dynamic Bonding Curve."],
+  ["02", "hatch a creature", "The new token launches against that pond token instead of defaulting to SOL."],
+  ["03", "water moves", "Buys put the pond token into the DBC quote reserve. Sells pull it back out. POND draws that reserve as water depth."],
+  ["04", "deeper water", "When a pond’s configured quote threshold is reached, the DBC becomes eligible to graduate into a Meteora DAMM v2 pool."],
+];
+
 export default function DocsPage() {
   return (
     <Shell>
-      <main className="page prose">
-        <div className="page-title"><span>FIELD NOTES</span><h1>how it flows</h1></div>
-        <h2>1. pick a pond</h2><p>A pond is an existing Solana token used as the quote asset for a creature's Meteora Dynamic Bonding Curve.</p>
-        <h2>2. hatch a creature</h2><p>The new token launches against that pond token instead of defaulting to SOL.</p>
-        <h2>3. water moves</h2><p>Buys add quote assets to the DBC quote reserve. Sells remove them. POND visualizes that real reserve as water depth.</p>
-        <h2>4. deeper water</h2><p>When the configured migration quote threshold is reached, the DBC becomes eligible to graduate into a Meteora DAMM v2 pool.</p>
-        <p className="muted">V1 uses Meteora's public DBC/DAMM v2 primitives. No custom custody contract is planned for the first release.</p>
+      <main className="page docs-page">
+        <div className="page-title manual-title">
+          <span>FIELD MANUAL · V1</span>
+          <h1>how it flows</h1>
+          <p>the short version, without the brochure language.</p>
+        </div>
+
+        <div className="manual-grid">
+          {notes.map(([no, title, body]) => (
+            <article className="manual-note" key={no}>
+              <span>{no}</span>
+              <div><h2>{title}</h2><p>{body}</p></div>
+            </article>
+          ))}
+        </div>
+
+        <aside className="manual-warning">
+          <strong>DEVNET NOTE</strong>
+          <p>V1 is still deliberately locked to devnet. The 1,000 WATER graduation threshold is a test preset, not a mainnet economic decision.</p>
+        </aside>
       </main>
     </Shell>
   );

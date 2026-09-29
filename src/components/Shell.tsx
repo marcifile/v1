@@ -1,35 +1,56 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useRouter } from "next/router";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { PROJECT, ROUTES } from "@/lib/project";
-
-function shortAddress(address: string) {
-  return address.slice(0, 4) + "…" + address.slice(-4);
-}
+import { useWorld } from "@/hooks/useWorld";
+import { shortAddress } from "@/lib/display";
 
 export function Shell({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const { publicKey, connected, disconnect } = useWallet();
   const { setVisible } = useWalletModal();
+  const { world, error } = useWorld(15000);
+
+  const latest = world?.events?.[0];
+  const latestCreature = latest?.creature_mint
+    ? world?.creatures.find((c) => c.mint === latest.creature_mint)
+    : null;
+
+  const routeActive = (href: string) => {
+    if (router.pathname === href) return true;
+    if (href === "/creatures" && router.pathname.startsWith("/creature/")) return true;
+    if (href === "/ponds" && router.pathname.startsWith("/pond/")) return true;
+    return false;
+  };
 
   return (
     <div className="app-shell">
       <header className="topbar">
-        <Link href="/" className="brand">
-          <span className="brand-icon">◌</span>
+        <Link href="/" className="brand" aria-label="pond home">
+          <span className="brand-icon"><span className="brand-pixel" /></span>
           <strong>{PROJECT.name}</strong>
         </Link>
-        <nav>
+
+        <nav className="topnav">
           {ROUTES.map((route) => (
-            <Link key={route.href} href={route.href}>{route.label}</Link>
+            <Link
+              key={route.href}
+              href={route.href}
+              className={routeActive(route.href) ? "active" : ""}
+            >
+              {route.label}
+            </Link>
           ))}
         </nav>
+
         <div className="topbar-actions">
-          <span>DEVNET</span>
+          <span className="network-light"><i /> DEVNET</span>
           <span>SND OFF</span>
           {connected && publicKey ? (
             <button type="button" onClick={() => void disconnect()}>
-              {shortAddress(publicKey.toBase58())}
+              {shortAddress(publicKey.toBase58(), 4)}
             </button>
           ) : (
             <button type="button" onClick={() => setVisible(true)}>
@@ -38,7 +59,24 @@ export function Shell({ children }: { children: ReactNode }) {
           )}
         </div>
       </header>
-      {children}
+
+      <div className="site-body">{children}</div>
+
+      <footer className="global-ticker">
+        <div><small>PONDS</small><strong>{world?.ponds.length ?? "—"}</strong></div>
+        <div><small>CREATURES</small><strong>{world?.creatures.length ?? "—"}</strong></div>
+        <div><small>CHAIN</small><strong>{error ? "RETRYING" : "SLOT LIVE"}</strong></div>
+        <div className="ticker-wide">
+          <small>LATEST RIPPLE</small>
+          <strong>
+            {latest
+              ? latest.type.toUpperCase() +
+                (latestCreature ? " · $" + latestCreature.symbol : "")
+              : "THE WATER IS QUIET"}
+          </strong>
+        </div>
+        <div className="ticker-live"><i /> LIVE</div>
+      </footer>
     </div>
   );
 }
