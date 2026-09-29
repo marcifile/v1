@@ -104,6 +104,12 @@ export default function HatchPage() {
       setMessage("your creature needs a name and ticker.");
       return;
     }
+    if (selected.launch_engine === "raydium-cpmm") {
+      setMessage(
+        "this pond uses the Raydium pool route. add initial creature + pond-token liquidity before launch."
+      );
+      return;
+    }
 
     setBusy("hatch");
     setMessage("publishing metadata and building the launch...");
@@ -304,7 +310,7 @@ export default function HatchPage() {
                 >
                   <strong>{"$" + (pond.symbol || "QUOTE")}</strong>
                   <span>{pond.name || shortAddress(pond.mint)}</span>
-                  <small>{pond.creature_count} creatures · register once, reuse forever</small>
+                  <small>{pond.creature_count} creatures · {pond.launch_engine === "raydium-cpmm" ? "Raydium pool route" : "Meteora curve"}</small>
                 </button>
               ))}
             </div>
@@ -364,15 +370,17 @@ export default function HatchPage() {
             <small>LAUNCH</small>
             <h2>{selected ? (symbol || "CREATURE") + " / " + selected.symbol : "pick a pond first"}</h2>
             <p className="muted">
-              your wallet pays normal Solana account/rent/network costs and becomes the on-chain creator.
+              {selected?.launch_engine === "raydium-cpmm"
+                ? "this pond uses the Raydium fallback. the creature launch needs initial liquidity in both the creature and pond token."
+                : "your wallet pays normal Solana account/rent/network costs and becomes the on-chain creator."}
             </p>
             <button
               className="big-hatch"
               type="button"
-              disabled={Boolean(busy) || !publicKey || !selected || !name.trim() || !symbol.trim()}
+              disabled={Boolean(busy) || !publicKey || !selected || !name.trim() || !symbol.trim() || selected.launch_engine === "raydium-cpmm"}
               onClick={() => void hatch()}
             >
-              {busy === "hatch" ? "HATCHING..." : "HATCH CREATURE"}
+              {busy === "hatch" ? "HATCHING..." : selected?.launch_engine === "raydium-cpmm" ? "ADD LIQUIDITY TO HATCH" : "HATCH CREATURE"}
             </button>
           </div>
         </section>
