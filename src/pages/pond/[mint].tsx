@@ -82,6 +82,7 @@ export default function PondPage() {
             <dl>
               <div><dt>residents</dt><dd>{pond.creature_count}</dd></div>
               <div><dt>water in curves</dt><dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 6)}</dd></div>
+              <div><dt>trading fees</dt><dd>{formatBaseUnits(pond.total_trading_quote_fee_base_units, pond.quote_decimals, 6)} {pond.symbol}</dd></div>
               <div><dt>mint</dt><dd>{shortAddress(pond.mint, 7)}</dd></div>
               <div><dt>dbc config</dt><dd>{shortAddress(pond.config, 7)}</dd></div>
               <div><dt>decimals</dt><dd>{pond.quote_decimals}</dd></div>
@@ -100,6 +101,7 @@ export default function PondPage() {
               <span className="field-thumb"><img src={mediaUrl(creature.image_uri)} alt="" /></span>
               <span><strong>{"$" + creature.symbol}</strong><small>{creature.name}</small></span>
               <span><strong>{(creature.progress * 100).toFixed(2)}%</strong><small>pond depth</small></span>
+              <span><strong>{formatBaseUnits(creature.total_trading_quote_fee_base_units, creature.quote_decimals, 4)} {creature.pond_symbol}</strong><small>trading fees</small></span>
               <span>{creature.migrated ? "GRADUATED" : "SWIMMING"}</span>
             </Link>
           ))}
