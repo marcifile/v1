@@ -1,5 +1,6 @@
 import {
   createContext,
+  createElement,
   useCallback,
   useContext,
   useEffect,
@@ -59,7 +60,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     [world, error, loading, refresh]
   );
 
-  return <WorldContext.Provider value={value}>{children}</WorldContext.Provider>;
+  return createElement(WorldContext.Provider, { value }, children);
 }
 
 export function useWorld(_refreshMs = 10_000) {
