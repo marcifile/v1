@@ -797,3 +797,11 @@ a.field-row:hover{background:#d3dfca}
   .pond-resident-row{grid-template-columns:60px 1fr 90px}
   .pond-resident-row>span:nth-last-child(-n+2){display:none}
 }
+
+.wallet-line{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:8px;opacity:.7}
+.wallet-line strong{font-size:9px}
+.amount-presets{display:flex;gap:6px;margin:0 0 9px}
+.amount-presets button{
+  flex:1!important;background:#d5d2c4!important;color:var(--ink)!important;
+  padding:5px 7px!important;box-shadow:1px 1px 0 var(--ink)!important;font-size:8px!important
+}
