@@ -25,3 +25,11 @@ export function shortAddress(value: string, size = 5) {
   if (!value) return "—";
   return value.slice(0, size) + "…" + value.slice(-size);
 }
+
+export function mediaUrl(value: string | null | undefined) {
+  if (!value) return "/pond-mark.svg";
+  if (value.startsWith("ipfs://")) {
+    return "https://gateway.pinata.cloud/ipfs/" + value.slice("ipfs://".length);
+  }
+  return value;
+}
