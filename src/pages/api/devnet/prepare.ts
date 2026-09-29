@@ -18,7 +18,7 @@ import {
 import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { buildDevnetPondCurve } from "@/lib/dbcPreset";
 import { deriveDevnetKeypair, devnetFaucetKeypair } from "@/lib/devnetFaucet";
-import { getServerConnection, POND_PROJECT_WALLET } from "@/lib/serverSolana";
+import { assertDevnet, getDevnetConnection, getServerConnection, POND_PROJECT_WALLET } from "@/lib/serverSolana";
 import { ensureSchema, getDb } from "@/lib/db";
 import { consumeRateLimit } from "@/lib/rateLimit";
 
@@ -183,8 +183,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    assertDevnet();
     const owner = new PublicKey(String(req.body?.owner || ""));
-    const connection = getServerConnection();
+    const connection = getDevnetConnection();
     const faucet = devnetFaucetKeypair();
 
     const sponsorBalance = await ensureFaucetFunded(connection, faucet);
@@ -204,13 +205,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await ensureSchema();
     await getDb().query(
       `
-        INSERT INTO ponds (mint, symbol, name, config, quote_decimals)
-        VALUES ($1, 'WATER', 'Pond Water', $2, $3)
+        INSERT INTO ponds (mint, symbol, name, config, quote_decimals, cluster)
+        VALUES ($1, 'WATER', 'Pond Water', $2, $3, 'devnet')
         ON CONFLICT (mint) DO UPDATE SET
           symbol = EXCLUDED.symbol,
           name = EXCLUDED.name,
           config = EXCLUDED.config,
           quote_decimals = EXCLUDED.quote_decimals,
+          cluster = 'devnet',
           updated_at = NOW()
       `,
       [quoteMint.toBase58(), config.toBase58(), WATER_DECIMALS]
