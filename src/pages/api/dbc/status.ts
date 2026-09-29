@@ -3,7 +3,7 @@ import { PublicKey } from "@solana/web3.js";
 import { getMint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { baseUnitsToHuman } from "@/lib/units";
-import { getServerConnection } from "@/lib/serverSolana";
+import { getActiveCluster, getServerConnection } from "@/lib/serverSolana";
 import { ensureSchema, getDb } from "@/lib/db";
 import { consumeRateLimit } from "@/lib/rateLimit";
 
@@ -20,14 +20,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const baseMint = new PublicKey(String(req.query.baseMint || ""));
+    const cluster = getActiveCluster();
 
     await ensureSchema();
     const registered = await getDb().query(
-      "SELECT mint FROM creatures WHERE mint = $1",
-      [baseMint.toBase58()]
+      "SELECT mint FROM creatures WHERE mint = $1 AND cluster = $2",
+      [baseMint.toBase58(), cluster]
     );
     if (registered.rowCount === 0) {
-      return res.status(404).json({ error: "Creature is not registered in POND." });
+      return res.status(404).json({ error: "Creature is not registered in p0nd." });
     }
 
     const connection = getServerConnection();
