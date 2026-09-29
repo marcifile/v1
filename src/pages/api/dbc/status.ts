@@ -73,6 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         feeMetrics.total.totalTradingQuoteFee,
         quoteMintState.decimals
       ),
+      creatorTradingFeePercentage: config.creatorTradingFeePercentage,
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
