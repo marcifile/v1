@@ -80,12 +80,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           encodeURIComponent(baseMint) +
           "?" +
           params.toString(),
-        imageUri: origin + "/pond-mark.svg",
+        imageUri: origin + "/p0nd-logo.png",
         warning: "Pinata is not configured yet.",
       });
     }
 
-    let imageUri = origin + "/pond-mark.svg";
+    let imageUri = origin + "/p0nd-logo.png";
 
     if (body.imageDataUrl) {
       const parsed = parseDataUrl(body.imageDataUrl);
