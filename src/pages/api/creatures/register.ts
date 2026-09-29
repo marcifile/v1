@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { readCreatureSnapshot } from "@/lib/chainSnapshot";
 import { withTransaction } from "@/lib/db";
 import { verifyConfirmedTransaction } from "@/lib/verifyTransaction";
+import { normalizeOptionalHttpUrl } from "@/lib/links";
 
 type Body = {
   baseMint: string;
@@ -11,6 +12,9 @@ type Body = {
   metadataUri?: string;
   imageUri?: string;
   description?: string;
+  website?: string;
+  x?: string;
+  telegram?: string;
   launchTx?: string;
   pondName?: string;
   pondSymbol?: string;
@@ -36,6 +40,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         error: "Submitted creator does not match the on-chain DBC creator.",
       });
     }
+
+    const website = normalizeOptionalHttpUrl(body.website, "Website");
+    const xUrl = normalizeOptionalHttpUrl(body.x, "X link");
+    const telegram = normalizeOptionalHttpUrl(body.telegram, "Telegram link");
 
     const verifiedLaunch = await verifyConfirmedTransaction({
       signature: body.launchTx,
@@ -67,8 +75,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await client.query(
         `
           INSERT INTO creatures
-            (mint, pond_mint, pool, config, creator, name, symbol, metadata_uri, image_uri, description, launch_tx, status)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+            (mint, pond_mint, pool, config, creator, name, symbol, metadata_uri, image_uri, description, website_url, x_url, telegram_url, launch_tx, status)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
           ON CONFLICT (mint) DO UPDATE SET
             pool = EXCLUDED.pool,
             config = EXCLUDED.config,
@@ -78,6 +86,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             metadata_uri = COALESCE(EXCLUDED.metadata_uri, creatures.metadata_uri),
             image_uri = COALESCE(EXCLUDED.image_uri, creatures.image_uri),
             description = COALESCE(EXCLUDED.description, creatures.description),
+            website_url = COALESCE(EXCLUDED.website_url, creatures.website_url),
+            x_url = COALESCE(EXCLUDED.x_url, creatures.x_url),
+            telegram_url = COALESCE(EXCLUDED.telegram_url, creatures.telegram_url),
             launch_tx = COALESCE(EXCLUDED.launch_tx, creatures.launch_tx),
             status = EXCLUDED.status,
             updated_at = NOW()
@@ -93,6 +104,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           body.metadataUri || null,
           body.imageUri || null,
           body.description?.trim().slice(0, 240) || null,
+          website,
+          xUrl,
+          telegram,
           body.launchTx || null,
           snapshot.migrated ? "graduated" : "bonding",
         ]
