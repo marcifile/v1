@@ -951,3 +951,102 @@ a.field-row:hover{background:#d3dfca}
 }
 .heading-actions span{font-size:8px;opacity:.62}
 #register-pond{scroll-margin-top:90px}
+
+/* p0nd production brand */
+.brand-icon.brand-logo{
+  overflow:hidden;background:#050605;padding:0;
+}
+.brand-icon.brand-logo img{
+  width:122px;max-width:none;height:122px;object-fit:contain;
+  transform:translate(-46px,-46px);
+  image-rendering:pixelated;
+}
+.habitat-token-logo{
+  position:absolute;z-index:4;left:50%;top:56%;transform:translate(-50%,-50%);
+  width:72px;height:72px;border:var(--line);border-radius:50%;overflow:hidden;
+  background:#111;box-shadow:4px 4px 0 #20142d;
+}
+.habitat-token-logo img,.pond-record-logo img{
+  width:100%;height:100%;object-fit:cover;image-rendering:pixelated;
+}
+.pond-record-heading{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.pond-record-heading h1{margin:2px 0 0}
+.pond-record-logo{
+  width:58px;height:58px;flex:0 0 58px;border:var(--line);border-radius:50%;
+  background:#111;overflow:hidden;box-shadow:3px 3px 0 var(--pink);
+}
+.no-ponds-launch{
+  display:flex;justify-content:space-between;align-items:center;gap:14px;
+  border:var(--line);background:#d9d4c3;padding:13px;margin:10px 0;
+}
+.no-ponds-launch strong{font-size:11px}.no-ponds-launch a{font-size:9px;font-weight:700;border-bottom:2px solid var(--pink)}
+.secondary-action{
+  display:inline-block;margin-top:10px;font-size:9px;font-weight:700;
+  border:var(--line);background:#d5d2c4;padding:8px 10px;box-shadow:2px 2px 0 var(--ink)
+}
+
+/* open a pond */
+.open-pond-page{max-width:1080px}
+.open-pond-flow{
+  display:grid;grid-template-columns:1fr 55px 1fr 55px 1fr;align-items:center;
+  border:var(--line);background:#d8d8ca;box-shadow:6px 6px 0 #9aa589;
+  padding:13px;margin-bottom:18px;
+}
+.open-pond-flow>b{text-align:center;font-size:22px}
+.open-pond-step{
+  min-height:112px;border:var(--line);background:#eee9dc;padding:15px;
+  display:flex;flex-direction:column;justify-content:center;text-align:center;
+}
+.open-pond-step.active{background:#b8cdbd;box-shadow:3px 3px 0 var(--pink)}
+.open-pond-step small{font-size:7px;letter-spacing:.1em}
+.open-pond-step strong{font-size:18px;margin:8px 0 4px}
+.open-pond-step span{font-size:8px;opacity:.65}
+.open-pond-console{
+  border:var(--line);background:#e6e2d4;box-shadow:7px 7px 0 #9aa589;padding:20px;
+}
+.open-pond-console>label>span{display:block;font-size:8px;letter-spacing:.1em;font-weight:700;margin-bottom:6px}
+.pond-input-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+.pond-input-row input{
+  min-width:0;border:var(--line);background:#f2eddf;padding:12px;
+}
+.pond-input-row button,.open-pond-button{
+  border:var(--line);background:var(--pink);color:white;box-shadow:3px 3px 0 var(--ink);
+  padding:11px 14px;font-weight:700;cursor:pointer;
+}
+.pond-input-row button:disabled,.open-pond-button:disabled{opacity:.45;cursor:not-allowed}
+.open-pond-inspection{
+  margin-top:16px;border:var(--line);background:#d0d9c8;padding:14px;
+  display:grid;grid-template-columns:180px 1fr;gap:16px;
+}
+.open-pond-token{display:flex;align-items:center;gap:11px}
+.open-pond-token>img,.open-pond-token>div{
+  width:70px;height:70px;flex:0 0 70px;border:var(--line);border-radius:50%;
+  object-fit:cover;display:grid;place-items:center;background:#101510;image-rendering:pixelated;
+}
+.open-pond-token span{min-width:0}
+.open-pond-token small{display:block;font-size:7px;letter-spacing:.1em}
+.open-pond-token strong{display:block;font-size:20px;margin:5px 0}
+.open-pond-token b{display:block;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.open-pond-inspection dl{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.open-pond-inspection dl div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #91858c;padding:7px 0;font-size:9px}
+.open-pond-inspection dd{margin:0;font-weight:700;text-align:right}
+.open-pond-inspection ul{grid-column:1/-1;margin:0;padding:10px 0 0 18px;font-size:8px;line-height:1.6}
+.pond-economics-preview{
+  display:grid;grid-template-columns:repeat(4,1fr);border:var(--line);margin-top:15px;background:#1e1627;color:#eee1cf;
+}
+.pond-economics-preview>div{padding:12px;border-right:1px solid #5b4c61}
+.pond-economics-preview>div:last-child{border-right:0}
+.pond-economics-preview small{display:block;font-size:7px;letter-spacing:.1em;color:#baa9b8}
+.pond-economics-preview strong{display:block;margin-top:5px;font-size:10px;color:#d5d45c}
+.open-pond-button{width:100%;margin-top:15px;font-size:12px}
+.open-pond-note{font-size:9px;line-height:1.65;opacity:.65;margin:14px 0 0}
+
+@media(max-width:760px){
+  .open-pond-flow{grid-template-columns:1fr;gap:6px}
+  .open-pond-flow>b{transform:rotate(90deg)}
+  .pond-input-row{grid-template-columns:1fr}
+  .open-pond-inspection{grid-template-columns:1fr}
+  .open-pond-inspection dl{grid-template-columns:1fr}
+  .pond-economics-preview{grid-template-columns:1fr 1fr}
+  .pond-economics-preview>div{border-bottom:1px solid #5b4c61}
+}
