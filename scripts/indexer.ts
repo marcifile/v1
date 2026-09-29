@@ -7,7 +7,8 @@ async function indexOne(mint: string) {
   const db = getDb();
   const latest = await db.query(
     `
-      SELECT quote_reserve::text, migration_threshold::text, progress, migrated, recorded_at
+      SELECT quote_reserve::text, migration_threshold::text, progress, migrated,
+             creator_quote_fee::text, total_trading_quote_fee::text, recorded_at
       FROM snapshots
       WHERE creature_mint = $1
       ORDER BY recorded_at DESC
@@ -23,6 +24,8 @@ async function indexOne(mint: string) {
     !before ||
     String(before.quote_reserve) !== snapshot.quoteReserve ||
     String(before.migration_threshold) !== snapshot.migrationThreshold ||
+    String(before.creator_quote_fee) !== snapshot.creatorQuoteFee ||
+    String(before.total_trading_quote_fee) !== snapshot.totalTradingQuoteFee ||
     Boolean(before.migrated) !== snapshot.migrated ||
     Math.abs(Number(before.progress || 0) - snapshot.progress) > 0.000001;
 
@@ -35,8 +38,8 @@ async function indexOne(mint: string) {
   await db.query(
     `
       INSERT INTO snapshots
-        (creature_mint, quote_reserve, migration_threshold, progress, migrated)
-      VALUES ($1,$2,$3,$4,$5)
+        (creature_mint, quote_reserve, migration_threshold, progress, migrated, creator_quote_fee, total_trading_quote_fee)
+      VALUES ($1,$2,$3,$4,$5,$6,$7)
     `,
     [
       snapshot.baseMint,
@@ -44,6 +47,8 @@ async function indexOne(mint: string) {
       snapshot.migrationThreshold,
       snapshot.progress,
       snapshot.migrated,
+      snapshot.creatorQuoteFee,
+      snapshot.totalTradingQuoteFee,
     ]
   );
 
