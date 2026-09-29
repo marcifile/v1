@@ -1,6 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getMint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk";
+import {
+  deriveTokenBadgeAddress,
+  DynamicBondingCurveClient,
+} from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { deriveDevnetKeypair } from "@/lib/devnetFaucet";
 import { ensureDevnetSponsor, parsePublicKey } from "@/lib/devnetSponsor";
 import { buildDevnetPondCurve } from "@/lib/dbcPreset";
@@ -58,7 +61,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       "pond-config-v2:" + quoteMint.toBase58()
     );
     const client = new DynamicBondingCurveClient(connection, "confirmed");
-    const configState = await client.state.getPoolConfig(config.publicKey);
+    const [configState, tokenBadgeState] = await Promise.all([
+      client.state.getPoolConfig(config.publicKey),
+      client.state.getTokenBadge(quoteMint).catch(() => null),
+    ]);
+    const tokenBadge = tokenBadgeState
+      ? deriveTokenBadgeAddress(quoteMint)
+      : undefined;
 
     if (!configState) {
       const tx = await client.partner.createConfig({
@@ -67,6 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         leftoverReceiver: POND_PROJECT_WALLET,
         payer: sponsor.publicKey,
         quoteMint,
+        tokenBadge,
         ...buildDevnetPondCurve(mint.decimals),
       });
       const latest = await connection.getLatestBlockhash("confirmed");
