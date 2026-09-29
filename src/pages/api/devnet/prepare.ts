@@ -19,6 +19,7 @@ import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk
 import { buildDevnetPondCurve } from "@/lib/dbcPreset";
 import { deriveDevnetKeypair, devnetFaucetKeypair } from "@/lib/devnetFaucet";
 import { getServerConnection, POND_PROJECT_WALLET } from "@/lib/serverSolana";
+import { ensureSchema, getDb } from "@/lib/db";
 
 const WATER_DECIMALS = 6;
 const TARGET_WATER = 1_000_000n * 10n ** BigInt(WATER_DECIMALS);
@@ -189,6 +190,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       connection,
       faucet,
       quoteMint
+    );
+
+    await ensureSchema();
+    await getDb().query(
+      `
+        INSERT INTO ponds (mint, symbol, name, config, quote_decimals)
+        VALUES ($1, 'WATER', 'Pond Water', $2, $3)
+        ON CONFLICT (mint) DO UPDATE SET
+          symbol = EXCLUDED.symbol,
+          name = EXCLUDED.name,
+          config = EXCLUDED.config,
+          quote_decimals = EXCLUDED.quote_decimals,
+          updated_at = NOW()
+      `,
+      [quoteMint.toBase58(), config.toBase58(), WATER_DECIMALS]
     );
 
     return res.status(200).json({
