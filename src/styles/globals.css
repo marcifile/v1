@@ -882,3 +882,21 @@ a.field-row:hover{background:#d3dfca}
 .lab-health-grid small{display:block;font-size:8px;line-height:1.4;opacity:.65}
 .lab-health-grid .ok b{color:#557744}.lab-health-grid .waiting b{color:#9a6a38}
 @media(max-width:700px){.lab-health-grid{grid-template-columns:1fr 1fr}.lab-health-grid>div:nth-child(2){border-right:0}.lab-health-grid>div{border-bottom:1px solid #8f848a}}
+
+/* hero shoreline correction: tree line + grassy bank, no mountain ridge */
+.world .pixel-horizon{
+  top:39%;height:34px;
+  background-position:center top;
+  background-size:auto 70px;
+  opacity:.72;
+}
+.world .pixel-water-depth{
+  height:43%;
+  background-color:#68a79e;
+  background-image:
+    radial-gradient(ellipse at 16% 25%,#91b356 0 18px,#54733f 19px 22px,transparent 23px),
+    radial-gradient(ellipse at 73% 38%,#88aa52 0 15px,#54733f 16px 19px,transparent 20px),
+    radial-gradient(ellipse at 88% 68%,#93b65c 0 12px,#54733f 13px 16px,transparent 17px),
+    linear-gradient(180deg,#82b9ad 0%,#72aca2 42%,#619a94 76%,#568a89 100%);
+  background-blend-mode:normal;
+}
