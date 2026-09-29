@@ -3,6 +3,7 @@ export type WorldPond = {
   symbol: string | null;
   name: string | null;
   config: string;
+  launch_engine: "meteora-dbc" | "raydium-cpmm";
   quote_decimals: number;
   image_uri: string | null;
   price_usd: number | null;
