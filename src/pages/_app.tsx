@@ -26,6 +26,11 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
+        <title>pond — coins living in other coins</title>
+        <meta
+          name="description"
+          content="Launch real Solana tokens priced in other Solana tokens."
+        />
         <link rel="icon" href="/pond-mark.svg" />
         <meta name="theme-color" content="#d5d5c7" />
         <meta property="og:site_name" content="pond" />
