@@ -22,6 +22,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const state = pool.account.poolState;
     const config = await client.state.getPoolConfig(state.config);
+    if (!config) {
+      return res.status(404).json({ error: "Pond config not found." });
+    }
+
     const quoteMint = config.quoteMint;
     const quoteInfo = await connection.getAccountInfo(quoteMint, "confirmed");
 
