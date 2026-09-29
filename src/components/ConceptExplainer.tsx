@@ -155,6 +155,29 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
         </p>
       </section>
 
+      <section className="creator-economics">
+        <div className="creator-economics-copy">
+          <small>CREATOR ECONOMICS</small>
+          <h2>build in a pond. earn in the pond token.</h2>
+          <p>
+            Each creature is a real Meteora DBC market. The current test config
+            gives the creature creator 50% of the DBC creator/partner trading-fee
+            share. Because POND collects those fees in the quote token, a FROG
+            creator in the PAID pond earns claimable PAID as FROG trades.
+          </p>
+          <span>
+            that is separate from the PAID sitting in the bonding-curve reserve.
+          </span>
+        </div>
+        <div className="fee-loop">
+          <div><small>TRADERS</small><strong>FROG ↔ PAID</strong></div>
+          <b>→</b>
+          <div className="fee-jar"><small>CREATOR FEE JAR</small><strong>PAID</strong></div>
+          <b>→</b>
+          <div><small>CREATOR</small><strong>CLAIM PAID</strong></div>
+        </div>
+      </section>
+
       <section className="live-proof">
         <header>
           <div>
