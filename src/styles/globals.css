@@ -814,3 +814,33 @@ a.field-row:hover{background:#d3dfca}
 
 .tape-detail{display:flex;justify-content:space-between;gap:12px;align-items:center}
 .tape-detail a{color:#d5d45b;white-space:nowrap;border-bottom:1px solid #d5d45b}
+
+.world-pond-tabs{
+  position:absolute;z-index:9;left:12px;top:12px;
+  display:flex;gap:6px;align-items:stretch;
+  max-width:calc(100% - 300px);overflow-x:auto;padding-bottom:3px;
+}
+.world-pond-tabs button,.world-pond-tabs>a{
+  flex:0 0 auto;border:var(--line);background:#e9e4d7;color:var(--ink);
+  padding:6px 8px;font-size:8px;font-weight:700;cursor:pointer;
+  box-shadow:2px 2px 0 #766a75;
+}
+.world-pond-tabs button{display:flex;align-items:center;gap:7px}
+.world-pond-tabs button small{
+  display:grid;place-items:center;min-width:18px;height:18px;
+  background:#cbc6b8;border:1px solid var(--ink);font-size:7px;
+}
+.world-pond-tabs button.active{
+  background:#a9c9b7;box-shadow:3px 3px 0 var(--pink);transform:translate(-1px,-1px)
+}
+.world-pond-tabs>a{display:grid;place-items:center;background:#d5d1c3}
+.world-legend{max-width:calc(100% - 16px)}
+.world-legend strong{font-size:8px;font-weight:700}
+@media(max-width:900px){
+  .world-pond-tabs{max-width:calc(100% - 190px)}
+}
+@media(max-width:620px){
+  .world-pond-tabs{top:42px;left:8px;right:8px;max-width:none}
+  .world-pond-tabs button,.world-pond-tabs>a{padding:5px 6px}
+  .featured{top:8px}
+}
