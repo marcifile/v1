@@ -17,8 +17,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <span>SO WHAT IS p0nd?</span>
           <h2>turn a token into an economy.</h2>
           <p>
-            Usually a new Solana coin launches against SOL. On p0nd, it can
-            launch against another existing Solana token instead.
+            Usually a new coin launches against SOL. On p0nd, it can launch against an existing pond token instead.
           </p>
         </div>
 
@@ -47,9 +46,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <small>THE POND</small>
           <h3>an existing token</h3>
           <p>
-            A pond is a supported Solana token used as the quote asset for new
-            launches. BONK can be a pond. PAID can be a pond. USDC can be a
-            pond.
+            A pond starts with an existing coin. Paste its CA once, and that coin becomes the quote asset for creatures launched inside the pond.
           </p>
           <div className="pond-orbit">
             <div className="pond-core">$PAID</div>
@@ -160,9 +157,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <small>CREATOR ECONOMICS</small>
           <h2>build in a pond. earn in the pond token.</h2>
           <p>
-            Each creature is a real Meteora DBC market. The current test config
-            gives the creature creator 50% of the DBC creator/partner trading-fee
-            share. Because p0nd collects those fees in the quote token, a FROG
+            Each creature is a real Meteora DBC market. The current launch config gives the creature creator 50% of the DBC creator/partner trading-fee share. Because p0nd collects those fees in the quote token, a FROG
             creator in the PAID pond earns claimable PAID as FROG trades.
           </p>
           <span>
@@ -226,7 +221,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <div><small>METADATA</small><strong>IPFS / Pinata</strong></div>
           <div><small>WORLD STATE</small><strong>indexed from chain</strong></div>
           <div><small>ONE POND</small><strong>many creatures</strong></div>
-          <div><small>CURRENT NETWORK</small><strong>devnet only</strong></div>
+          <div><small>NETWORK</small><strong>mainnet</strong></div>
         </div>
         <p>
           A real on-chain market does not guarantee that every third-party
@@ -239,7 +234,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
         <header>
           <div>
             <span>THIS POND RIGHT NOW</span>
-            <h2>the demo is real devnet state.</h2>
+            <h2>live pond state.</h2>
           </div>
           <Link href="/hatch">hatch something →</Link>
         </header>
@@ -253,7 +248,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <div>
             <small>CREATURES</small>
             <strong>{creatures.length}</strong>
-            <span>real devnet SPL tokens</span>
+            <span>creatures in live ponds</span>
           </div>
           <div>
             <small>{firstPond ? "$" + firstPond.symbol + " WATER" : "WATER"}</small>
@@ -276,9 +271,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
         </div>
 
         <p className="devnet-explain">
-          Devnet means the mechanics are real but the assets have no monetary
-          value. Mainnet stays locked until each pond&apos;s economics and
-          graduation threshold are configured deliberately.
+          pond and creature state is indexed from chain. wallet prompts are the source of truth for anything you sign.
         </p>
       </section>
     </div>
