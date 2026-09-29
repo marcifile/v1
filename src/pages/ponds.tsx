@@ -20,7 +20,7 @@ export default function PondsPage() {
                 "existing Solana tokens used as the trading currency for creature markets."}
           </p>
           <div className="heading-actions">
-            <Link href="/hatch#register-pond">open a new pond →</Link>
+            <Link href="/ponds/new">open a new pond →</Link>
             <span>register once · reuse forever</span>
           </div>
         </div>
