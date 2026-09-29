@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { Transaction } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
@@ -6,6 +7,8 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Shell } from "@/components/Shell";
 import { mediaUrl, shortAddress } from "@/lib/display";
 import { useWorld } from "@/hooks/useWorld";
+import { extractSolanaAddress } from "@/lib/addressInput";
+import { inspectToken } from "@/lib/tokenInspection";
 
 type Inspection = {
   mint: string;
@@ -52,19 +55,85 @@ function money(value: number | null | undefined) {
   return "$" + value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
-export default function OpenPondPage() {
+type PageProps = {
+  initialInput: string;
+  initialInspection: Inspection | null;
+  initialMessage: string | null;
+};
+
+export const getServerSideProps: GetServerSideProps<PageProps> = async (context) => {
+  const raw = typeof context.query.mint === "string" ? context.query.mint.trim() : "";
+  if (!raw) {
+    return {
+      props: {
+        initialInput: "",
+        initialInspection: null,
+        initialMessage: null,
+      },
+    };
+  }
+
+  try {
+    const mint = extractSolanaAddress(raw, "Contract address");
+    const inspected = await inspectToken(mint, "mainnet");
+    const reasons: string[] = [];
+    if (!inspected.launchSupportedNow) {
+      reasons.push(
+        inspected.tokenProgram === "token-2022"
+          ? "This Token-2022 mint needs a Meteora token badge before it can be used as a pond."
+          : "This token program cannot be used as a pond quote asset."
+      );
+    }
+
+    const initialInspection = {
+      ...inspected,
+      eligibility: {
+        eligible: reasons.length === 0,
+        minimumLiquidityUsd: 0,
+        reasons,
+      },
+    } as Inspection;
+
+    return {
+      props: {
+        initialInput: initialInspection.mint,
+        initialInspection,
+        initialMessage:
+          reasons.length === 0
+            ? "token found · ready to open as a pond."
+            : "not compatible · " + reasons.join(" · "),
+      },
+    };
+  } catch (error) {
+    return {
+      props: {
+        initialInput: raw,
+        initialInspection: null,
+        initialMessage:
+          error instanceof Error ? error.message : "Could not fetch token.",
+      },
+    };
+  }
+};
+
+export default function OpenPondPage({
+  initialInput,
+  initialInspection,
+  initialMessage,
+}: PageProps) {
   const router = useRouter();
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   const { setVisible } = useWalletModal();
   const { refresh } = useWorld();
 
-  const [input, setInput] = useState("");
-  const [inspection, setInspection] = useState<Inspection | null>(null);
+  const [input, setInput] = useState(initialInput);
+  const [inspection, setInspection] = useState<Inspection | null>(initialInspection);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState(
-    "paste a CA. p0nd will fetch the token and show you exactly what will become the pond."
+    initialMessage ||
+      "paste a CA. p0nd will fetch the token and show you exactly what will become the pond."
   );
 
   const inspect = async (override?: string) => {
@@ -206,23 +275,27 @@ export default function OpenPondPage() {
         </section>
 
         <section className="open-pond-console">
-          <label>
-            <span>CONTRACT ADDRESS</span>
-            <div className="pond-input-row">
-              <input
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  setInspection(null);
-                  setPrepared(null);
-                }}
-                placeholder="paste CA"
-              />
-              <button type="button" disabled={busy === "inspect"} onClick={() => void inspect()}>
-                {busy === "inspect" ? "FETCHING..." : "FETCH TOKEN"}
-              </button>
-            </div>
-          </label>
+          <form id="pond-fetch-form" method="get" action="/ponds/new">
+            <label>
+              <span>CONTRACT ADDRESS</span>
+              <div className="pond-input-row">
+                <input
+                  name="mint"
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    setInspection(null);
+                    setPrepared(null);
+                  }}
+                  placeholder="paste CA"
+                  autoComplete="off"
+                />
+                <button type="submit" disabled={busy === "inspect"}>
+                  {busy === "inspect" ? "FETCHING..." : "FETCH TOKEN"}
+                </button>
+              </div>
+            </label>
+          </form>
 
           {inspection && (
             <div className="open-pond-inspection">
@@ -267,9 +340,10 @@ export default function OpenPondPage() {
 
           <button
             className="open-pond-button"
-            type="button"
+            type={inspection ? "button" : "submit"}
+            form={inspection ? undefined : "pond-fetch-form"}
             disabled={Boolean(busy)}
-            onClick={() => inspection ? void openPond() : void inspect()}
+            onClick={inspection ? () => void openPond() : undefined}
           >
             {busy === "inspect"
               ? "FETCHING TOKEN..."
