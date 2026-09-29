@@ -40,7 +40,7 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <Link href="/" className="brand" aria-label="pond home">
+        <Link href="/" className="brand" aria-label="p0nd home">
           <span className="brand-icon"><span className="brand-pixel" /></span>
           <strong>{PROJECT.name}</strong>
         </Link>
