@@ -917,3 +917,13 @@ a.field-row:hover{background:#d3dfca}
   .ponds-explain-strip{grid-template-columns:1fr;gap:6px}
   .ponds-explain-strip>b{transform:rotate(90deg)}
 }
+
+.hatch-concept-strip{
+  display:grid;grid-template-columns:1fr 150px 1fr 150px 1fr;align-items:center;
+  border:var(--line);background:#d5d8c8;box-shadow:5px 5px 0 #9aa589;
+  margin-bottom:18px;padding:12px;
+}
+.hatch-concept-strip>div{text-align:center;border:1px solid #8c8188;background:#eee9da;padding:10px}
+.hatch-concept-strip>div:nth-of-type(2){background:#b7cdbf}
+.hatch-concept-strip small{display:block;font-size:7px;letter-spacing:.1em}.hatch-concept-strip strong{display:block;margin-top:5px;font-size:14px}.hatch-concept-strip>b{text-align:center;font-size:8px}
+@media(max-width:760px){.hatch-concept-strip{grid-template-columns:1fr;gap:7px}.hatch-concept-strip>b{transform:none}}
