@@ -4,6 +4,10 @@ export type WorldPond = {
   name: string | null;
   config: string;
   quote_decimals: number;
+  image_uri: string | null;
+  price_usd: number | null;
+  liquidity_usd: number | null;
+  market_cap_usd: number | null;
   creature_count: number;
   quote_reserve_base_units: string;
   total_trading_quote_fee_base_units: string;
@@ -55,5 +59,6 @@ export type WorldPayload = {
   ponds: WorldPond[];
   creatures: WorldCreature[];
   events: WorldEvent[];
+  cluster?: "devnet" | "mainnet";
   generatedAt: string;
 };
