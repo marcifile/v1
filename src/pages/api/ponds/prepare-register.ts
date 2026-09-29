@@ -51,7 +51,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!inspected.launchSupportedNow) {
       return res.status(400).json({
-        error: "p0nd v1 currently opens ponds only for standard SPL tokens.",
+        error:
+          inspected.tokenProgram === "token-2022"
+            ? "This Token-2022 mint does not have the Meteora quote-token badge required to open it as a pond."
+            : "This token is not currently compatible with p0nd pond creation.",
         inspection: inspected,
       });
     }
