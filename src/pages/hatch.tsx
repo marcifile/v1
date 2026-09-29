@@ -166,6 +166,7 @@ export default function HatchPage() {
       }
 
       const inspected = data as PondInspection;
+      setPondMint(inspected.mint);
       setPondInspection(inspected);
       if (inspected.symbol) setPondSymbol(inspected.symbol.toUpperCase());
       if (inspected.name) setPondName(inspected.name);
@@ -492,7 +493,7 @@ export default function HatchPage() {
               </p>
               <div className="register-grid">
                 <input
-                  placeholder="token mint"
+                  placeholder="token mint, Solscan, DexScreener or Axiom link"
                   value={pondMint}
                   onChange={(e) => {
                     setPondMint(e.target.value);
