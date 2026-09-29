@@ -34,6 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           INSERT INTO snapshots
             (creature_mint, quote_reserve, migration_threshold, progress, migrated, creator_quote_fee, total_trading_quote_fee)
           VALUES ($1,$2,$3,$4,$5,$6,$7)
+          ON CONFLICT DO NOTHING
         `,
         [
           snapshot.baseMint,
