@@ -3,7 +3,12 @@ import { useMemo } from "react";
 import { useRouter } from "next/router";
 import { Shell } from "@/components/Shell";
 import { useWorld } from "@/hooks/useWorld";
-import { formatBaseUnits, mediaUrl, shortAddress } from "@/lib/display";
+import {
+  formatBaseUnits,
+  mediaUrl,
+  shortAddress,
+  solanaExplorerUrl,
+} from "@/lib/display";
 
 const positions = [
   { left: "16%", top: "56%" },
@@ -83,8 +88,8 @@ export default function PondPage() {
               <div><dt>residents</dt><dd>{pond.creature_count}</dd></div>
               <div><dt>water in curves</dt><dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 6)}</dd></div>
               <div><dt>trading fees</dt><dd>{formatBaseUnits(pond.total_trading_quote_fee_base_units, pond.quote_decimals, 6)} {pond.symbol}</dd></div>
-              <div><dt>mint</dt><dd>{shortAddress(pond.mint, 7)}</dd></div>
-              <div><dt>dbc config</dt><dd>{shortAddress(pond.config, 7)}</dd></div>
+              <div><dt>mint</dt><dd><a href={solanaExplorerUrl("address", pond.mint)} target="_blank" rel="noreferrer">{shortAddress(pond.mint, 7)} ↗</a></dd></div>
+              <div><dt>dbc config</dt><dd><a href={solanaExplorerUrl("address", pond.config)} target="_blank" rel="noreferrer">{shortAddress(pond.config, 7)} ↗</a></dd></div>
               <div><dt>decimals</dt><dd>{pond.quote_decimals}</dd></div>
             </dl>
 
