@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { Shell } from "@/components/Shell";
 import { useWorld } from "@/hooks/useWorld";
-import { formatBaseUnits, shortAddress } from "@/lib/display";
+import { formatBaseUnits, mediaUrl, shortAddress } from "@/lib/display";
 
 type LiveStatus = {
   quoteReserve: string;
@@ -106,9 +106,12 @@ export default function CreaturePage() {
             <span className="room-label">
               {"POND / $" + (creature.pond_symbol ?? "QUOTE")}
             </span>
-            <div className="big-sprite">●</div>
+            <div className="big-sprite image-sprite">
+              <img src={mediaUrl(creature.image_uri)} alt={creature.name} />
+            </div>
             <h1>{"$" + creature.symbol}</h1>
             <p>{"living in $" + (creature.pond_symbol ?? "?")}</p>
+            {creature.description && <p className="creature-note">{creature.description}</p>}
           </div>
 
           <div className="room-data">
