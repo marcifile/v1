@@ -69,16 +69,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Swap amount must be greater than zero." });
     }
 
-    const slot = await connection.getSlot("confirmed");
     const currentPoint =
       Number(config.activationType) === ActivationType.Timestamp
-        ? new BN(
-            String(
-              (await connection.getBlockTime(slot)) ||
-                Math.floor(Date.now() / 1000)
-            )
-          )
-        : new BN(String(slot));
+        ? new BN(String(Math.floor(Date.now() / 1000)))
+        : new BN(String(await connection.getSlot("confirmed")));
 
     const slippageBps = Math.min(
       Math.max(Number(body.slippageBps ?? 200), 1),
