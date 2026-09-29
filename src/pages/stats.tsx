@@ -1,16 +1,25 @@
 import { Shell } from "@/components/Shell";
-import { creatures, ponds } from "@/lib/mock";
+import { useWorld } from "@/hooks/useWorld";
 
 export default function StatsPage() {
+  const { world, loading, error } = useWorld(10000);
+  const ponds = world?.ponds ?? [];
+  const creatures = world?.creatures ?? [];
+  const events = world?.events ?? [];
+
   return (
     <Shell>
       <main className="page">
-        <div className="page-title"><span>READOUT</span><h1>stats</h1><p>chain-backed counters will land after the DBC integration.</p></div>
+        <div className="page-title">
+          <span>READOUT · LIVE DATABASE + CHAIN SNAPSHOTS</span>
+          <h1>stats</h1>
+          <p>{loading ? "counting ripples..." : error || "what the pond has seen."}</p>
+        </div>
         <div className="stat-grid">
           <div><small>PONDS</small><strong>{ponds.length}</strong></div>
           <div><small>CREATURES</small><strong>{creatures.length}</strong></div>
-          <div><small>ACTIVE</small><strong>{creatures.filter((c) => c.state !== "sleeping").length}</strong></div>
-          <div><small>GRADUATED</small><strong>0</strong></div>
+          <div><small>EVENTS</small><strong>{events.length}</strong></div>
+          <div><small>GRADUATED</small><strong>{creatures.filter((c) => c.migrated).length}</strong></div>
         </div>
       </main>
     </Shell>
