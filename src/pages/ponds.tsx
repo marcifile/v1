@@ -20,16 +20,17 @@ export default function PondsPage() {
                 "existing Solana tokens used as the trading currency for creature markets."}
           </p>
           <div className="heading-actions">
-            <Link href="/hatch">register / choose a pond →</Link>
+            <Link href="/hatch#register-pond">open a new pond →</Link>
+            <span>register once · reuse forever</span>
           </div>
         </div>
 
         <div className="ponds-explain-strip">
-          <div><small>A POND IS</small><strong>an existing token</strong></div>
+          <div><small>1 · START WITH</small><strong>an existing token</strong></div>
           <b>→</b>
-          <div><small>CREATURES INSIDE IT TRADE AS</small><strong>FROG / POND TOKEN</strong></div>
+          <div><small>2 · REGISTER ONCE</small><strong>one reusable DBC config</strong></div>
           <b>→</b>
-          <div><small>ONE POND CAN HOLD</small><strong>many creature markets</strong></div>
+          <div><small>3 · THEN LAUNCH</small><strong>many creature markets</strong></div>
         </div>
 
         <div className="habitat-grid">
