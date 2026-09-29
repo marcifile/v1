@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { PublicKey } from "@solana/web3.js";
 import {
   deriveDbcPoolAddress,
+  deriveTokenBadgeAddress,
   DynamicBondingCurveClient,
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
@@ -42,6 +43,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: "Pond config not found on devnet." });
     }
 
+    const tokenBadgeState = await client.state
+      .getTokenBadge(configState.quoteMint)
+      .catch(() => null);
+    const tokenBadge = tokenBadgeState
+      ? deriveTokenBadgeAddress(configState.quoteMint)
+      : undefined;
+
     const tx = await client.creator.createPool({
       baseMint: baseMintKey,
       config: configKey,
@@ -50,6 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       uri: body.uri,
       payer: sponsor.publicKey,
       poolCreator,
+      tokenBadge,
     });
 
     const latest = await connection.getLatestBlockhash("confirmed");
