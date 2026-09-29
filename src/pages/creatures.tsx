@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Shell } from "@/components/Shell";
 import { useWorld } from "@/hooks/useWorld";
-import { formatBaseUnits } from "@/lib/display";
+import { formatBaseUnits, mediaUrl } from "@/lib/display";
 
 export default function CreaturesPage() {
   const { world, loading, error } = useWorld(10000);
@@ -30,7 +30,9 @@ export default function CreaturesPage() {
             {creatures.map((c, i) => (
               <Link className="field-card" key={c.mint} href={"/creature/" + c.mint}>
                 <small>{"NO. " + String(i + 1).padStart(4, "0")}</small>
-                <div className="field-sprite">{["●","◆","⬡","■","▲"][i % 5]}</div>
+                <div className="field-sprite">
+                  <img src={mediaUrl(c.image_uri)} alt={c.name} />
+                </div>
                 <h2>{"$" + c.symbol}</h2>
                 <p>{"living in $" + (c.pond_symbol ?? "?")}</p>
                 <dl>
