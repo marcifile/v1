@@ -20,6 +20,10 @@ type Inspection = {
   tokenProgram: "spl-token" | "token-2022";
   tokenBadgeExists: boolean;
   launchSupportedNow: boolean;
+  meteoraSupported: boolean;
+  raydiumSupported: boolean;
+  launchEngine: "meteora-dbc" | "raydium-cpmm" | null;
+  tokenExtensions: string[];
   origin: "native-sol" | "pump.fun" | "solana";
   isNativeSol: boolean;
   eligibility: {
@@ -80,7 +84,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (context)
     if (!inspected.launchSupportedNow) {
       reasons.push(
         inspected.tokenProgram === "token-2022"
-          ? "This Token-2022 mint needs a Meteora token badge before it can be used as a pond."
+          ? "This Token-2022 mint uses extensions that are not supported by the available permissionless pool routes."
           : "This token program cannot be used as a pond quote asset."
       );
     }
@@ -257,20 +261,20 @@ export default function OpenPondPage({
         <section className="open-pond-flow">
           <div className="open-pond-step">
             <small>01 · PASTE CA</small>
-            <strong>$PAID</strong>
+            <strong>{inspection?.symbol ? "$" + inspection.symbol : "ANY CA"}</strong>
             <span>existing coin</span>
           </div>
           <b>→</b>
           <div className="open-pond-step active">
             <small>02 · OPEN POND</small>
-            <strong>PAID POND</strong>
+            <strong>{inspection?.symbol ? inspection.symbol + " POND" : "NEW POND"}</strong>
             <span>one habitat</span>
           </div>
           <b>→</b>
           <div className="open-pond-step">
             <small>03 · MANY CREATURES</small>
-            <strong>FISH / PAID</strong>
-            <span>FROG / PAID · MOTH / PAID</span>
+            <strong>{"FISH / " + (inspection?.symbol || "POND")}</strong>
+            <span>{"FROG / " + (inspection?.symbol || "POND") + " · MOTH / " + (inspection?.symbol || "POND")}</span>
           </div>
         </section>
 
@@ -316,7 +320,7 @@ export default function OpenPondPage({
                 <div><dt>decimals</dt><dd>{inspection.decimals}</dd></div>
                 <div><dt>origin</dt><dd>{inspection.origin === "pump.fun" ? "PUMP.FUN / PUMPSWAP" : inspection.origin === "native-sol" ? "SOL" : "ON-CHAIN"}</dd></div>
                 <div><dt>token program</dt><dd>{inspection.tokenProgram === "token-2022" ? "TOKEN-2022" : "SPL TOKEN"}</dd></div>
-                <div><dt>Meteora badge</dt><dd>{inspection.tokenProgram === "token-2022" ? (inspection.tokenBadgeExists ? "FOUND" : "MISSING") : "NOT NEEDED"}</dd></div>
+                <div><dt>launch route</dt><dd>{inspection.launchEngine === "meteora-dbc" ? "METEORA DBC" : inspection.launchEngine === "raydium-cpmm" ? "RAYDIUM CPMM" : "NONE"}</dd></div>
                 <div><dt>pond</dt><dd>{inspection.eligibility?.eligible ? "READY" : "NOT COMPATIBLE"}</dd></div>
               </dl>
 
