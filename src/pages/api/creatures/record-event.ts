@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { readCreatureSnapshot } from "@/lib/chainSnapshot";
 import { withTransaction } from "@/lib/db";
 import { verifyConfirmedTransaction } from "@/lib/verifyTransaction";
+import { getActiveCluster } from "@/lib/serverSolana";
 
 type Body = {
   baseMint: string;
@@ -19,6 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const body = req.body as Body;
+    const cluster = getActiveCluster();
     if (!["buy", "sell", "claim_creator_fee"].includes(String(body.type))) {
       return res.status(400).json({ error: "Unsupported event type." });
     }
@@ -38,8 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await withTransaction(async (client) => {
       const exists = await client.query(
-        "SELECT 1 FROM creatures WHERE mint = $1",
-        [snapshot.baseMint]
+        "SELECT 1 FROM creatures WHERE mint = $1 AND cluster = $2",
+        [snapshot.baseMint, cluster]
       );
       if (exists.rowCount === 0) {
         throw new Error("Creature is not registered in POND yet.");
@@ -75,8 +77,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await client.query(
         `
           INSERT INTO events
-            (type, creature_mint, pond_mint, actor, tx_signature, amount_in, amount_out, metadata)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb)
+            (type, creature_mint, pond_mint, actor, tx_signature, amount_in, amount_out, metadata, cluster)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9)
           ON CONFLICT DO NOTHING
         `,
         [
@@ -92,6 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             verifiedSlot: verifiedTx.slot,
             source: "confirmed-ui-transaction",
           }),
+          cluster,
         ]
       );
     });
