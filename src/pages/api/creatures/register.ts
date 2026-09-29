@@ -105,6 +105,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           INSERT INTO events
             (type, creature_mint, pond_mint, actor, tx_signature, metadata)
           VALUES ('launch', $1, $2, $3, $4, $5::jsonb)
+          ON CONFLICT DO NOTHING
         `,
         [
           snapshot.baseMint,
