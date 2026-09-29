@@ -128,7 +128,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const criticalOk =
     checks.database.ok &&
     checks.solanaRpc.ok &&
-    checks.indexer.ok;
+    checks.indexer.ok &&
+    checks.pinata.ok;
 
   return res.status(criticalOk ? 200 : 503).json({
     ok: criticalOk,
