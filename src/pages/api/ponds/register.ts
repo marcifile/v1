@@ -8,7 +8,7 @@ import { deriveDevnetKeypair } from "@/lib/devnetFaucet";
 import { ensureDevnetSponsor } from "@/lib/devnetSponsor";
 import { buildDevnetPondCurve } from "@/lib/dbcPreset";
 import { ensureSchema, getDb } from "@/lib/db";
-import { POND_PROJECT_WALLET } from "@/lib/serverSolana";
+import { assertDevnet, POND_PROJECT_WALLET } from "@/lib/serverSolana";
 import { consumeRateLimit } from "@/lib/rateLimit";
 import { extractSolanaAddress } from "@/lib/addressInput";
 
@@ -32,6 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    assertDevnet();
     const quoteMint = extractSolanaAddress(req.body?.mint, "Pond mint");
     const labelSymbol = String(req.body?.symbol || "QUOTE")
       .trim()
