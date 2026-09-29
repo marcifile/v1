@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ensureSchema, getDb } from "@/lib/db";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getServerConnection } from "@/lib/serverSolana";
+import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string) {
   let timer: NodeJS.Timeout | undefined;
@@ -26,6 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     solanaRpc: { ok: false, detail: "" },
     indexer: { ok: false, detail: "" },
     pinata: { ok: false, detail: "" },
+    sponsor: { ok: false, detail: "" },
   };
 
   try {
@@ -96,6 +99,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
   }
 
+  try {
+    const connection = getServerConnection();
+    const sponsor = devnetFaucetKeypair();
+    const lamports = await withTimeout(
+      connection.getBalance(sponsor.publicKey, "confirmed"),
+      6000,
+      "sponsor balance"
+    );
+    const sol = lamports / LAMPORTS_PER_SOL;
+    checks.sponsor = {
+      ok: sol >= 0.05,
+      detail: sol.toFixed(3) + " devnet SOL available",
+    };
+  } catch (error) {
+    checks.sponsor = {
+      ok: false,
+      detail:
+        error instanceof Error ? error.message : "sponsor check failed",
+    };
+  }
+
   if (!process.env.PINATA_JWT) {
     checks.pinata = { ok: false, detail: "PINATA_JWT not configured" };
   } else {
@@ -129,7 +153,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     checks.database.ok &&
     checks.solanaRpc.ok &&
     checks.indexer.ok &&
-    checks.pinata.ok;
+    checks.pinata.ok &&
+    checks.sponsor.ok;
 
   return res.status(criticalOk ? 200 : 503).json({
     ok: criticalOk,
