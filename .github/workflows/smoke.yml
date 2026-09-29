@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 concurrency:
-  group: pond-production-smoke
+  group: p0nd-production-smoke
   cancel-in-progress: true
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           BASE="https://v1-production-76b1.up.railway.app"
-          for route in / /creatures /ponds /hatch /docs /stats /log /lab; do
+          for route in / /creatures /ponds /ponds/new /hatch /docs /stats /log; do
             code=$(curl -L -sS -o /tmp/page.html -w "%{http_code}" "$BASE$route")
             echo "$route -> $code"
             test "$code" = "200"
