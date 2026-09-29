@@ -1,12 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getActiveCluster } from "@/lib/serverSolana";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const mint = String(req.query.mint || "");
-  const name = String(req.query.name || "Pond Creature").slice(0, 32);
-  const symbol = String(req.query.symbol || "POND").slice(0, 10).toUpperCase();
+  const name = String(req.query.name || "p0nd Creature").slice(0, 32);
+  const symbol = String(req.query.symbol || "CREATURE").slice(0, 10).toUpperCase();
   const description = String(
-    req.query.description || "A creature living in a POND quote-token habitat."
+    req.query.description || "A creature living in a p0nd quote-token habitat."
   ).slice(0, 240);
+  const cluster = getActiveCluster();
 
   const host = req.headers.host || "localhost:3000";
   const proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0];
@@ -17,11 +19,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     name,
     symbol,
     description,
-    image: origin + "/pond-mark.svg",
+    image: origin + "/p0nd-logo.png",
     external_url: origin + "/creature/" + mint,
     attributes: [
-      { trait_type: "world", value: "POND" },
-      { trait_type: "network", value: "devnet" },
+      { trait_type: "world", value: "p0nd" },
+      {
+        trait_type: "network",
+        value: cluster === "mainnet" ? "mainnet-beta" : "devnet",
+      },
     ],
   });
 }
