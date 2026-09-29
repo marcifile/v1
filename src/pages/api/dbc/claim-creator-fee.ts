@@ -5,6 +5,7 @@ import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk
 import { baseUnitsToHuman } from "@/lib/units";
 import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
 import { getServerConnection } from "@/lib/serverSolana";
+import { consumeRateLimit } from "@/lib/rateLimit";
 
 type Body = {
   baseMint: string;
@@ -14,6 +15,14 @@ type Body = {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const rate = consumeRateLimit(req, "claim-fee", 30, 3600000);
+  if (!rate.ok) {
+    res.setHeader("Retry-After", String(rate.retryAfterSeconds));
+    return res.status(429).json({
+      error: "Too many requests. Try again later.",
+    });
   }
 
   try {
