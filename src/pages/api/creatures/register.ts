@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { readCreatureSnapshot } from "@/lib/chainSnapshot";
 import { withTransaction } from "@/lib/db";
+import { verifyConfirmedTransaction } from "@/lib/verifyTransaction";
 
 type Body = {
   baseMint: string;
@@ -27,6 +28,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!body.creator || !body.name?.trim() || !body.symbol?.trim()) {
       return res.status(400).json({ error: "Missing creature identity." });
     }
+    if (!body.launchTx) {
+      return res.status(400).json({ error: "Missing confirmed launch transaction." });
+    }
+
+    const verifiedLaunch = await verifyConfirmedTransaction({
+      signature: body.launchTx,
+      expectedSigner: body.creator,
+      expectedAccounts: [snapshot.baseMint, snapshot.pool, snapshot.config],
+    });
 
     await withTransaction(async (client) => {
       await client.query(
@@ -112,7 +122,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           snapshot.quoteMint,
           body.creator,
           body.launchTx || null,
-          JSON.stringify({ pool: snapshot.pool, config: snapshot.config }),
+          JSON.stringify({
+            pool: snapshot.pool,
+            config: snapshot.config,
+            verified: true,
+            verifiedSlot: verifiedLaunch.slot,
+          }),
         ]
       );
     });
