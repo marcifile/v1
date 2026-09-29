@@ -68,8 +68,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         `,
         [
           snapshot.quoteMint,
-          body.pondSymbol || "WATER",
-          body.pondName || "Pond Water",
+          body.pondSymbol || "QUOTE",
+          body.pondName || "Pond",
           snapshot.config,
           snapshot.quoteDecimals,
           cluster,
