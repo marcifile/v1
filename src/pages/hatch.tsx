@@ -1,83 +1,58 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useCallback, useMemo, useState } from "react";
 import { Keypair, Transaction } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Shell } from "@/components/Shell";
+import { useWorld } from "@/hooks/useWorld";
+import type { WorldPond } from "@/types/world";
+import { shortAddress } from "@/lib/display";
 
-type PondState = {
-  quoteMint: string;
-  config: string;
+type Launched = {
   baseMint: string;
   pool: string;
+  metadataUri: string;
 };
 
-type SetupInfo = {
-  waterBalance: string;
-  feesSponsored: boolean;
-};
-
-type PoolStatus = {
-  pool: string;
-  baseMint: string;
-  quoteMint: string;
-  config: string;
-  quoteReserve: string;
-  migrationQuoteThreshold: string;
-  progressPercent: number;
-  isMigrated: boolean;
-  updatedAt: string;
-};
-
-const STORAGE_KEY = "pond.devnet.lab.v2";
-
-function short(value: string) {
-  if (!value) return "—";
-  return value.slice(0, 6) + "…" + value.slice(-6);
+function readImage(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Could not read image."));
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function HatchPage() {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   const { setVisible } = useWalletModal();
+  const { world, loading, error, refresh } = useWorld(10000);
 
-  const [state, setState] = useState<PondState>({
-    quoteMint: "",
-    config: "",
-    baseMint: "",
-    pool: "",
-  });
-  const [setup, setSetup] = useState<SetupInfo | null>(null);
-  const [name, setName] = useState("Pond Frog");
-  const [symbol, setSymbol] = useState("FROG");
-  const [buyAmount, setBuyAmount] = useState("10");
-  const [sellAmount, setSellAmount] = useState("1000");
-  const [status, setStatus] = useState<PoolStatus | null>(null);
+  const [selectedMint, setSelectedMint] = useState("");
+  const [pondMint, setPondMint] = useState("");
+  const [pondSymbol, setPondSymbol] = useState("");
+  const [pondName, setPondName] = useState("");
+  const [name, setName] = useState("");
+  const [symbol, setSymbol] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageDataUrl, setImageDataUrl] = useState("");
+  const [firstBuy, setFirstBuy] = useState("10");
   const [busy, setBusy] = useState("");
-  const [message, setMessage] = useState(
-    "connect a wallet, then prepare the test pond."
+  const [message, setMessage] = useState("pick some water.");
+  const [launched, setLaunched] = useState<Launched | null>(null);
+
+  const ponds = world?.ponds ?? [];
+  const selected = useMemo(
+    () => ponds.find((pond) => pond.mint === selectedMint) ?? null,
+    [ponds, selectedMint]
   );
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) setState(JSON.parse(saved) as PondState);
-    } catch {
-      // local-only devnet convenience
-    }
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
-
-  const canSign = Boolean(publicKey && signTransaction);
 
   const sendPartiallySigned = useCallback(
     async (transaction: Transaction, signer?: Keypair) => {
       if (!publicKey || !signTransaction) {
         throw new Error("Connect a wallet first.");
       }
-
       if (signer) transaction.partialSign(signer);
       const signed = await signTransaction(transaction);
       const signature = await connection.sendRawTransaction(signed.serialize(), {
@@ -98,11 +73,10 @@ export default function HatchPage() {
     [connection, publicKey, signTransaction]
   );
 
-  const preparePond = async () => {
+  const prepareWater = async () => {
     if (!publicKey) return setVisible(true);
-
-    setBusy("prepare");
-    setMessage("getting the test pond ready...");
+    setBusy("water");
+    setMessage("filling the little test pond...");
     try {
       const response = await fetch("/api/devnet/prepare", {
         method: "POST",
@@ -110,335 +84,416 @@ export default function HatchPage() {
         body: JSON.stringify({ owner: publicKey.toBase58() }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "could not prepare the test pond.");
-      }
-
-      setState({
-        quoteMint: data.quoteMint,
-        config: data.config,
-        baseMint: "",
-        pool: "",
-      });
-      setSetup({
-        waterBalance: data.waterBalance,
-        feesSponsored: Boolean(data.feesSponsored),
-      });
-      setStatus(null);
+      if (!response.ok) throw new Error(data.error || "Could not prepare WATER.");
+      await refresh();
+      setSelectedMint(data.quoteMint);
       setMessage(
-        "test pond ready · 1,000,000 WATER is in your wallet · devnet fees are sponsored."
+        "WATER is ready · 1,000,000 test WATER is in your wallet."
       );
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "test pond setup failed."
-      );
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not prepare WATER.");
     } finally {
       setBusy("");
     }
   };
 
-  const hatchCreature = async () => {
+  const registerPond = async () => {
+    if (!pondMint.trim()) {
+      setMessage("paste a devnet token mint first.");
+      return;
+    }
+    setBusy("pond");
+    setMessage("checking the water...");
+    try {
+      const response = await fetch("/api/ponds/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mint: pondMint.trim(),
+          symbol: pondSymbol.trim() || "QUOTE",
+          name: pondName.trim() || "Pond",
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not register pond.");
+      await refresh();
+      setSelectedMint(data.pond.mint);
+      setMessage(
+        data.created
+          ? "$" + data.pond.symbol + " is now a pond."
+          : "$" + data.pond.symbol + " was already here."
+      );
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not register pond.");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const onImage = async (file?: File) => {
+    if (!file) {
+      setImageDataUrl("");
+      return;
+    }
+    try {
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("Image must be 5MB or smaller.");
+      }
+      setImageDataUrl(await readImage(file));
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not read image.");
+    }
+  };
+
+  const hatch = async () => {
     if (!publicKey || !signTransaction) return setVisible(true);
-    if (!state.config) {
-      setMessage("prepare the test pond first.");
+    if (!selected) {
+      setMessage("choose a pond first.");
+      return;
+    }
+    if (!name.trim() || !symbol.trim()) {
+      setMessage("your creature needs a name and ticker.");
       return;
     }
 
     setBusy("hatch");
-    setMessage("building the creature launch...");
+    setMessage("the egg is moving...");
     try {
       const baseMint = Keypair.generate();
-      const metadataUri =
-        window.location.origin +
-        "/api/metadata/" +
-        baseMint.publicKey.toBase58() +
-        "?name=" +
-        encodeURIComponent(name.trim()) +
-        "&symbol=" +
-        encodeURIComponent(symbol.trim().toUpperCase());
 
-      const response = await fetch("/api/dbc/create-pool", {
+      const metaResponse = await fetch("/api/metadata/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          config: state.config,
+          baseMint: baseMint.publicKey.toBase58(),
+          name,
+          symbol,
+          description,
+          imageDataUrl: imageDataUrl || undefined,
+        }),
+      });
+      const metadata = await metaResponse.json();
+      if (!metaResponse.ok) {
+        throw new Error(metadata.error || "Could not publish metadata.");
+      }
+
+      const createResponse = await fetch("/api/dbc/create-pool", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          config: selected.config,
           baseMint: baseMint.publicKey.toBase58(),
           payer: publicKey.toBase58(),
           name,
           symbol,
-          uri: metadataUri,
+          uri: metadata.metadataUri,
         }),
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "launch build failed.");
+      const built = await createResponse.json();
+      if (!createResponse.ok) {
+        throw new Error(built.error || "Could not build launch.");
       }
 
-      const tx = Transaction.from(Buffer.from(data.transaction, "base64"));
-      const signature = await sendPartiallySigned(tx, baseMint);
-
-      setState((current) => ({
-        ...current,
-        baseMint: data.baseMint,
-        pool: data.pool,
-      }));
+      const tx = Transaction.from(Buffer.from(built.transaction, "base64"));
+      const launchSignature = await sendPartiallySigned(tx, baseMint);
 
       const registerResponse = await fetch("/api/creatures/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          baseMint: data.baseMint,
+          baseMint: built.baseMint,
           creator: publicKey.toBase58(),
           name,
           symbol,
-          metadataUri,
-          launchTx: signature,
-          pondName: "Pond Water",
-          pondSymbol: "WATER",
+          description,
+          metadataUri: metadata.metadataUri,
+          imageUri: metadata.imageUri,
+          launchTx: launchSignature,
+          pondName: selected.name,
+          pondSymbol: selected.symbol,
         }),
       });
       const registered = await registerResponse.json();
       if (!registerResponse.ok) {
-        setMessage(
-          "hatched on-chain · world indexing delayed · " +
-            (registered.error || "retry later")
-        );
-      } else {
-        setMessage(
-          "something just hatched · " +
-            short(data.baseMint) +
-            " · saved to the pond · tx " +
-            short(signature)
+        throw new Error(
+          "Launched on-chain, but POND indexing failed: " +
+            (registered.error || "unknown error")
         );
       }
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "hatch failed.");
+
+      setLaunched({
+        baseMint: built.baseMint,
+        pool: built.pool,
+        metadataUri: metadata.metadataUri,
+      });
+      await refresh();
+      setMessage(
+        "$" +
+          symbol.trim().toUpperCase() +
+          " just hatched in $" +
+          (selected.symbol || "QUOTE") +
+          "."
+      );
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Hatch failed.");
     } finally {
       setBusy("");
     }
   };
 
-  const refreshStatus = useCallback(async () => {
-    if (!state.baseMint) return;
-    try {
-      const response = await fetch(
-        "/api/dbc/status?baseMint=" + encodeURIComponent(state.baseMint)
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "status read failed.");
-      }
-      setStatus(data as PoolStatus);
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "can't see through the water."
-      );
-    }
-  }, [state.baseMint]);
-
-  useEffect(() => {
-    if (!state.baseMint) return;
-    void refreshStatus();
-    const timer = window.setInterval(() => void refreshStatus(), 8000);
-    return () => window.clearInterval(timer);
-  }, [refreshStatus, state.baseMint]);
-
-  const swap = async (direction: "buy" | "sell") => {
-    if (!publicKey || !signTransaction) return setVisible(true);
-    if (!state.baseMint) {
-      setMessage("hatch a creature first.");
-      return;
-    }
-
-    const amount = direction === "buy" ? buyAmount : sellAmount;
-    setBusy(direction);
-    setMessage(direction === "buy" ? "making a splash..." : "swimming back...");
+  const firstSwim = async () => {
+    if (!publicKey || !signTransaction || !launched) return;
+    setBusy("buy");
+    setMessage("first splash...");
     try {
       const response = await fetch("/api/dbc/swap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          baseMint: state.baseMint,
+          baseMint: launched.baseMint,
           owner: publicKey.toBase58(),
-          direction,
-          amount,
+          direction: "buy",
+          amount: firstBuy,
           slippageBps: 300,
         }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "swap build failed.");
-      }
+      if (!response.ok) throw new Error(data.error || "Could not build buy.");
 
       const tx = Transaction.from(Buffer.from(data.transaction, "base64"));
       const signature = await sendPartiallySigned(tx);
-      const eventResponse = await fetch("/api/creatures/record-event", {
+
+      await fetch("/api/creatures/record-event", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          baseMint: state.baseMint,
-          type: direction,
+          baseMint: launched.baseMint,
+          type: "buy",
           actor: publicKey.toBase58(),
           txSignature: signature,
-          amountIn: amount,
+          amountIn: firstBuy,
           amountOut: data.expectedAmountOut,
         }),
       });
-      const eventData = await eventResponse.json();
 
+      await refresh();
       setMessage(
-        (direction === "buy" ? "bought · " : "sold · ") +
-          "expected out " +
-          data.expectedAmountOut +
-          " · tx " +
-          short(signature) +
-          (eventResponse.ok ? " · world updated" : " · indexing delayed: " + (eventData.error || "retry later"))
+        "first swim complete · " +
+          firstBuy +
+          " " +
+          (selected?.symbol || "QUOTE") +
+          " made a splash."
       );
-      await refreshStatus();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "swap failed.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "First swim failed.");
     } finally {
       setBusy("");
     }
   };
 
-  const progress = useMemo(
-    () => Math.max(0, Math.min(100, status?.progressPercent ?? 0)),
-    [status]
-  );
-
   return (
     <Shell>
-      <main className="page hatch-page">
+      <main className="page hatch-public">
         <div className="page-title">
-          <span>DEVNET HATCHERY · TEST ASSETS HAVE NO VALUE</span>
-          <h1>hatch something</h1>
-          <p>
-            prove one real creature can live in another token before we polish
-            the public flow.
-          </p>
+          <span>HATCHERY · DEVNET PREVIEW</span>
+          <h1>hatch a creature</h1>
+          <p>pick the water it lives in, give it a name, then let it swim.</p>
         </div>
 
-        {!canSign && (
-          <section className="lab-panel dock-panel">
-            <small>YOU'RE STANDING ON THE DOCK</small>
-            <h2>connect a wallet</h2>
-            <p>This lab only touches Solana devnet.</p>
+        {!publicKey && (
+          <section className="hatch-step hatch-connect">
+            <small>YOU&apos;RE STANDING ON THE DOCK</small>
+            <h2>connect first</h2>
             <button type="button" onClick={() => setVisible(true)}>
-              Connect
+              Step onto the dock
             </button>
           </section>
         )}
 
-        <div className="lab-grid">
-          <section className="lab-panel">
-            <small>01 · TEST SETUP</small>
-            <h2>prepare the pond</h2>
-            <p>
-              Railway supplies fake devnet gas, test WATER, and the reusable
-              Meteora pond config. This step does not ask Phantom to sign.
+        <section className="hatch-step">
+          <div className="step-number">01</div>
+          <div className="step-body">
+            <small>CHOOSE THE WATER</small>
+            <h2>where does it live?</h2>
+            <p className="muted">
+              {loading
+                ? "looking for ponds..."
+                : error ||
+                  "each pond is a real quote token + Meteora DBC config."}
             </p>
-            <button
-              type="button"
-              disabled={Boolean(busy) || !publicKey}
-              onClick={preparePond}
-            >
-              {busy === "prepare" ? "preparing..." : "Prepare test pond"}
-            </button>
-            <div className="address-readout">
-              <span>water mint</span><strong>{short(state.quoteMint)}</strong>
-              <span>dbc config</span><strong>{short(state.config)}</strong>
-              <span>your WATER</span><strong>{setup?.waterBalance ?? "—"}</strong>
-              <span>devnet fees</span><strong>{setup?.feesSponsored ? "sponsored" : "—"}</strong>
-            </div>
-          </section>
 
-          <section className="lab-panel">
-            <small>02 · HATCH</small>
-            <h2>new creature</h2>
-            <p>
-              This opens Phantom because you own/sign the creature launch.
-              Railway pays the devnet fee and account rent for this test.
+            <div className="pond-picker">
+              {ponds.map((pond: WorldPond) => (
+                <button
+                  key={pond.mint}
+                  type="button"
+                  className={
+                    selectedMint === pond.mint
+                      ? "pond-choice selected"
+                      : "pond-choice"
+                  }
+                  onClick={() => setSelectedMint(pond.mint)}
+                >
+                  <strong>{"$" + (pond.symbol || "QUOTE")}</strong>
+                  <span>{pond.name || shortAddress(pond.mint)}</span>
+                  <small>{pond.creature_count} creatures</small>
+                </button>
+              ))}
+            </div>
+
+            <div className="hatch-inline-actions">
+              <button
+                type="button"
+                disabled={busy === "water" || !publicKey}
+                onClick={prepareWater}
+              >
+                {busy === "water" ? "filling..." : "Use test WATER"}
+              </button>
+            </div>
+
+            <details className="register-pond">
+              <summary>register another devnet pond</summary>
+              <div className="register-grid">
+                <input
+                  placeholder="token mint"
+                  value={pondMint}
+                  onChange={(e) => setPondMint(e.target.value)}
+                />
+                <input
+                  placeholder="ticker, e.g. BONK"
+                  value={pondSymbol}
+                  onChange={(e) => setPondSymbol(e.target.value.toUpperCase())}
+                />
+                <input
+                  placeholder="name"
+                  value={pondName}
+                  onChange={(e) => setPondName(e.target.value)}
+                />
+                <button
+                  type="button"
+                  disabled={busy === "pond"}
+                  onClick={registerPond}
+                >
+                  {busy === "pond" ? "checking..." : "Register pond"}
+                </button>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <section className="hatch-step">
+          <div className="step-number">02</div>
+          <div className="step-body">
+            <small>WHO MOVED IN?</small>
+            <h2>your creature</h2>
+
+            <div className="creature-form-grid">
+              <div>
+                <label>
+                  <span>name</span>
+                  <input
+                    value={name}
+                    maxLength={32}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Frog"
+                  />
+                </label>
+                <label>
+                  <span>ticker</span>
+                  <input
+                    value={symbol}
+                    maxLength={10}
+                    onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                    placeholder="FROG"
+                  />
+                </label>
+                <label>
+                  <span>little note</span>
+                  <textarea
+                    value={description}
+                    maxLength={240}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="sleeps under the lily pads."
+                  />
+                </label>
+              </div>
+
+              <label className="image-drop">
+                <span>{imageDataUrl ? "picture ready" : "drop a picture here"}</span>
+                {imageDataUrl ? (
+                  <img src={imageDataUrl} alt="creature preview" />
+                ) : (
+                  <div className="image-placeholder">+</div>
+                )}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={(e) => void onImage(e.target.files?.[0])}
+                />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section className="hatch-step">
+          <div className="step-number">03</div>
+          <div className="step-body hatch-final">
+            <small>HATCH</small>
+            <h2>
+              {selected
+                ? "into $" + (selected.symbol || "QUOTE")
+                : "pick a pond first"}
+            </h2>
+            <p className="muted">
+              Phantom signs ownership. Devnet network/rent fees are sponsored
+              in this preview.
             </p>
-            <label className="lab-input">
-              <span>name</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} />
-            </label>
-            <label className="lab-input">
-              <span>ticker</span>
-              <input
-                value={symbol}
-                maxLength={10}
-                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-              />
-            </label>
             <button
+              className="big-hatch"
               type="button"
-              disabled={Boolean(busy) || !state.config}
-              onClick={hatchCreature}
+              disabled={
+                Boolean(busy) ||
+                !publicKey ||
+                !selected ||
+                !name.trim() ||
+                !symbol.trim()
+              }
+              onClick={hatch}
             >
               {busy === "hatch" ? "hatching..." : "Hatch creature"}
             </button>
-            <div className="address-readout">
-              <span>base mint</span><strong>{short(state.baseMint)}</strong>
-              <span>pool</span><strong>{short(state.pool)}</strong>
-            </div>
-          </section>
-        </div>
+          </div>
+        </section>
 
-        {state.baseMint && (
-          <section className="water-lab">
-            <div className="water-readout">
-              <small>LIVE · READ FROM CHAIN</small>
-              <h2>{status?.isMigrated ? "deeper water" : "pond depth"}</h2>
-              <div className="water-meter">
-                <span style={{ width: progress + "%" }} />
-              </div>
-              <div className="water-numbers">
-                <div>
-                  <small>WATER IN CURVE</small>
-                  <strong>{status?.quoteReserve ?? "checking..."}</strong>
-                </div>
-                <div>
-                  <small>GRADUATES AT</small>
-                  <strong>{status?.migrationQuoteThreshold ?? "checking..."}</strong>
-                </div>
-                <div>
-                  <small>PROGRESS</small>
-                  <strong>{status ? status.progressPercent + "%" : "—"}</strong>
-                </div>
-              </div>
+        {launched && (
+          <section className="hatched-card">
+            <div>
+              <small>IT HATCHED</small>
+              <h2>{"$" + symbol.toUpperCase()}</h2>
+              <p>
+                {shortAddress(launched.baseMint, 7)}
+                {" · living in $" + (selected?.symbol || "QUOTE")}
+              </p>
+              <Link href={"/creature/" + launched.baseMint}>
+                visit creature →
+              </Link>
             </div>
 
-            <div className="swap-grid">
-              <div className="swap-box">
-                <small>BUY · WATER → CREATURE</small>
-                <input
-                  value={buyAmount}
-                  onChange={(e) => setBuyAmount(e.target.value)}
-                />
-                <button
-                  type="button"
-                  disabled={Boolean(busy)}
-                  onClick={() => void swap("buy")}
-                >
-                  {busy === "buy" ? "splashing..." : "Buy creature"}
-                </button>
-              </div>
-              <div className="swap-box">
-                <small>SELL · CREATURE → WATER</small>
-                <input
-                  value={sellAmount}
-                  onChange={(e) => setSellAmount(e.target.value)}
-                />
-                <button
-                  type="button"
-                  disabled={Boolean(busy)}
-                  onClick={() => void swap("sell")}
-                >
-                  {busy === "sell" ? "swimming..." : "Sell creature"}
-                </button>
-              </div>
+            <div className="first-swim">
+              <small>FIRST SWIM · OPTIONAL</small>
+              <input
+                value={firstBuy}
+                onChange={(e) => setFirstBuy(e.target.value)}
+              />
+              <button
+                type="button"
+                disabled={busy === "buy"}
+                onClick={firstSwim}
+              >
+                {busy === "buy"
+                  ? "splashing..."
+                  : "Buy with " + (selected?.symbol || "quote")}
+              </button>
             </div>
           </section>
         )}
@@ -448,18 +503,9 @@ export default function HatchPage() {
           <strong>{message}</strong>
         </div>
 
-        <button
-          type="button"
-          className="reset-lab"
-          onClick={() => {
-            setState({ quoteMint: "", config: "", baseMint: "", pool: "" });
-            setSetup(null);
-            setStatus(null);
-            setMessage("local lab cleared. devnet accounts still exist.");
-          }}
-        >
-          clear local lab
-        </button>
+        <p className="dev-lab-link">
+          <Link href="/lab">open old devnet lab →</Link>
+        </p>
       </main>
     </Shell>
   );
