@@ -97,6 +97,9 @@ export async function ensureSchema() {
           ON events(created_at DESC);
         CREATE INDEX IF NOT EXISTS events_creature_idx
           ON events(creature_mint, created_at DESC);
+        CREATE UNIQUE INDEX IF NOT EXISTS events_tx_type_unique_idx
+          ON events(tx_signature, type)
+          WHERE tx_signature IS NOT NULL;
       `);
     })().catch((error) => {
       global.__pondSchemaReady = undefined;
