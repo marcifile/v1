@@ -32,11 +32,24 @@ export default function CreaturesPage() {
     }
 
     if (filter === "trending") {
-      return all.sort((a, b) => {
-        const av = BigInt(a.total_trading_quote_fee_base_units || "0");
-        const bv = BigInt(b.total_trading_quote_fee_base_units || "0");
-        return av === bv ? 0 : av > bv ? -1 : 1;
-      });
+      const events = world?.events ?? [];
+      const recentTrades = new Map<string, number>();
+      for (const event of events) {
+        if (
+          event.creature_mint &&
+          (event.type === "buy" || event.type === "sell")
+        ) {
+          recentTrades.set(
+            event.creature_mint,
+            (recentTrades.get(event.creature_mint) || 0) + 1
+          );
+        }
+      }
+      return all.sort(
+        (a, b) =>
+          (recentTrades.get(b.mint) || 0) -
+          (recentTrades.get(a.mint) || 0)
+      );
     }
 
     if (filter === "near") {
@@ -82,7 +95,7 @@ export default function CreaturesPage() {
               placeholder="ticker, name, pond or mint"
             />
           </label>
-          <span>trending ranks by real on-chain quote-token trading fees</span>
+          <span>trending ranks by recent indexed buy/sell activity</span>
         </div>
 
         <div className="field-table">
