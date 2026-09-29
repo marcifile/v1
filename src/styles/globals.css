@@ -927,3 +927,27 @@ a.field-row:hover{background:#d3dfca}
 .hatch-concept-strip>div:nth-of-type(2){background:#b7cdbf}
 .hatch-concept-strip small{display:block;font-size:7px;letter-spacing:.1em}.hatch-concept-strip strong{display:block;margin-top:5px;font-size:14px}.hatch-concept-strip>b{text-align:center;font-size:8px}
 @media(max-width:760px){.hatch-concept-strip{grid-template-columns:1fr;gap:7px}.hatch-concept-strip>b{transform:none}}
+
+/* launch identity + one-time pond registration polish */
+.creature-links{
+  margin-top:10px;border-top:1px solid #8f848a;padding-top:10px;
+}
+.creature-links summary{
+  cursor:pointer;font-size:8px;font-weight:700;letter-spacing:.1em;margin-bottom:8px;
+}
+.creature-links label{margin-bottom:8px}
+.specimen-links{
+  display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:9px;
+}
+.specimen-links a{
+  border:1px solid var(--ink);background:#efe9d9;padding:4px 7px;font-size:8px;font-weight:700;
+  box-shadow:2px 2px 0 var(--pink);
+}
+.heading-actions{
+  margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.heading-actions a{
+  border:var(--line);background:var(--pink);color:white;padding:8px 11px;font-size:9px;font-weight:700;box-shadow:3px 3px 0 var(--ink);
+}
+.heading-actions span{font-size:8px;opacity:.62}
+#register-pond{scroll-margin-top:90px}
