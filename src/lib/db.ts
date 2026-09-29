@@ -53,6 +53,9 @@ export async function ensureSchema() {
           metadata_uri TEXT,
           image_uri TEXT,
           description TEXT,
+          website_url TEXT,
+          x_url TEXT,
+          telegram_url TEXT,
           launch_tx TEXT,
           status TEXT NOT NULL DEFAULT 'bonding',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -61,6 +64,9 @@ export async function ensureSchema() {
 
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS image_uri TEXT;
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS description TEXT;
+        ALTER TABLE creatures ADD COLUMN IF NOT EXISTS website_url TEXT;
+        ALTER TABLE creatures ADD COLUMN IF NOT EXISTS x_url TEXT;
+        ALTER TABLE creatures ADD COLUMN IF NOT EXISTS telegram_url TEXT;
 
         CREATE TABLE IF NOT EXISTS snapshots (
           id BIGSERIAL PRIMARY KEY,
