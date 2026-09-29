@@ -18,6 +18,18 @@ export function Shell({ children }: { children: ReactNode }) {
     ? world?.creatures.find((c) => c.mint === latest.creature_mint)
     : null;
 
+  const newestSnapshot = world?.creatures
+    .map((creature) => creature.snapshot_at)
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1);
+  const snapshotAge = newestSnapshot
+    ? Math.max(
+        0,
+        Math.round((Date.now() - new Date(newestSnapshot).getTime()) / 1000)
+      )
+    : null;
+
   const routeActive = (href: string) => {
     if (router.pathname === href) return true;
     if (href === "/creatures" && router.pathname.startsWith("/creature/")) return true;
@@ -65,7 +77,16 @@ export function Shell({ children }: { children: ReactNode }) {
       <footer className="global-ticker">
         <div><small>PONDS</small><strong>{world?.ponds.length ?? "—"}</strong></div>
         <div><small>CREATURES</small><strong>{world?.creatures.length ?? "—"}</strong></div>
-        <div><small>CHAIN</small><strong>{error ? "RETRYING" : "SLOT LIVE"}</strong></div>
+        <div>
+          <small>INDEXER</small>
+          <strong>
+            {error
+              ? "RETRYING"
+              : snapshotAge === null
+              ? "WAITING"
+              : snapshotAge + "s AGO"}
+          </strong>
+        </div>
         <div className="ticker-wide">
           <small>LATEST RIPPLE</small>
           <strong>
@@ -75,7 +96,7 @@ export function Shell({ children }: { children: ReactNode }) {
               : "THE WATER IS QUIET"}
           </strong>
         </div>
-        <div className="ticker-live"><i /> LIVE</div>
+        <div className="ticker-live"><i /> {error ? "STALE" : "LIVE"}</div>
       </footer>
     </div>
   );
