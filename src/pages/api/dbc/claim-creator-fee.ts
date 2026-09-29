@@ -4,7 +4,7 @@ import { getMint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { baseUnitsToHuman } from "@/lib/units";
 import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
-import { getServerConnection } from "@/lib/serverSolana";
+import { getActiveCluster, getServerConnection } from "@/lib/serverSolana";
 import { ensureSchema, getDb } from "@/lib/db";
 import { consumeRateLimit } from "@/lib/rateLimit";
 
@@ -30,15 +30,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const body = req.body as Body;
     const baseMint = new PublicKey(String(body.baseMint || ""));
     const creator = new PublicKey(String(body.creator || ""));
+    const cluster = getActiveCluster();
 
     await ensureSchema();
     const registered = await getDb().query(
-      "SELECT creator FROM creatures WHERE mint = $1",
-      [baseMint.toBase58()]
+      "SELECT creator FROM creatures WHERE mint = $1 AND cluster = $2",
+      [baseMint.toBase58(), cluster]
     );
     if (registered.rowCount === 0) {
       return res.status(403).json({
-        error: "That token is not a registered POND creature.",
+        error: "That token is not a registered p0nd creature.",
       });
     }
     if (String(registered.rows[0].creator) !== creator.toBase58()) {
@@ -47,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    const sponsor = devnetFaucetKeypair();
+    const sponsor = cluster === "devnet" ? devnetFaucetKeypair() : null;
     const connection = getServerConnection();
     const client = new DynamicBondingCurveClient(connection, "confirmed");
 
@@ -98,7 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const tx = await client.creator.claimCreatorTradingFee2({
       creator,
-      payer: sponsor.publicKey,
+      payer: sponsor?.publicKey || creator,
       pool: pool.publicKey,
       maxBaseAmount: creatorBaseFee,
       maxQuoteAmount: creatorQuoteFee,
@@ -106,9 +107,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const latest = await connection.getLatestBlockhash("confirmed");
-    tx.feePayer = sponsor.publicKey;
+    tx.feePayer = sponsor?.publicKey || creator;
     tx.recentBlockhash = latest.blockhash;
-    tx.partialSign(sponsor);
+    if (sponsor) tx.partialSign(sponsor);
 
     return res.status(200).json({
       transaction: tx
@@ -122,7 +123,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         quoteMintState.decimals
       ),
       creatorTradingFeePercentage: config.creatorTradingFeePercentage,
-      sponsored: true,
+      sponsored: Boolean(sponsor),
+      cluster,
       lastValidBlockHeight: latest.lastValidBlockHeight,
     });
   } catch (error) {
