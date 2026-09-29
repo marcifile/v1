@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { Transaction } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Shell } from "@/components/Shell";
@@ -32,6 +33,10 @@ export default function CreaturePage() {
   const [sellAmount, setSellAmount] = useState("1000");
   const [busy, setBusy] = useState("");
   const [tradeLog, setTradeLog] = useState("ready by the water.");
+  const [walletBalances, setWalletBalances] = useState({
+    pond: "0",
+    creature: "0",
+  });
 
   const creature = useMemo(
     () => world?.creatures.find((c) => c.mint === id) ?? null,
@@ -45,6 +50,44 @@ export default function CreaturePage() {
         .slice(0, 6),
     [world, id]
   );
+
+  const loadBalances = useCallback(async () => {
+    if (!publicKey || !creature) {
+      setWalletBalances({ pond: "0", creature: "0" });
+      return;
+    }
+
+    try {
+      const [pondAta, creatureAta] = await Promise.all([
+        getAssociatedTokenAddress(
+          new PublicKey(creature.pond_mint),
+          publicKey
+        ),
+        getAssociatedTokenAddress(
+          new PublicKey(creature.mint),
+          publicKey
+        ),
+      ]);
+
+      const [pondBalance, creatureBalance] = await Promise.all([
+        connection
+          .getTokenAccountBalance(pondAta, "confirmed")
+          .then((result) => result.value.uiAmountString || "0")
+          .catch(() => "0"),
+        connection
+          .getTokenAccountBalance(creatureAta, "confirmed")
+          .then((result) => result.value.uiAmountString || "0")
+          .catch(() => "0"),
+      ]);
+
+      setWalletBalances({
+        pond: pondBalance,
+        creature: creatureBalance,
+      });
+    } catch {
+      setWalletBalances({ pond: "0", creature: "0" });
+    }
+  }, [connection, creature, publicKey]);
 
   const loadStatus = useCallback(async () => {
     if (!id) return;
@@ -67,9 +110,13 @@ export default function CreaturePage() {
   useEffect(() => {
     if (!id) return;
     void loadStatus();
-    const timer = window.setInterval(() => void loadStatus(), 8000);
+    void loadBalances();
+    const timer = window.setInterval(() => {
+      void loadStatus();
+      void loadBalances();
+    }, 8000);
     return () => window.clearInterval(timer);
-  }, [id, loadStatus]);
+  }, [id, loadStatus, loadBalances]);
 
   const claimCreatorFees = async () => {
     if (!publicKey || !signTransaction) {
@@ -128,7 +175,7 @@ export default function CreaturePage() {
         }),
       });
 
-      await Promise.all([loadStatus(), refresh()]);
+      await Promise.all([loadStatus(), loadBalances(), refresh()]);
       setTradeLog(
         "creator fees claimed · " +
           data.claimQuote +
@@ -199,7 +246,7 @@ export default function CreaturePage() {
         }),
       });
 
-      await Promise.all([loadStatus(), refresh()]);
+      await Promise.all([loadStatus(), loadBalances(), refresh()]);
       setTradeLog(
         (direction === "buy" ? "bought · " : "sold · ") +
           "expected out " +
@@ -235,6 +282,21 @@ export default function CreaturePage() {
       </Shell>
     );
   }
+
+  const setPercentAmount = (
+    side: "buy" | "sell",
+    fraction: number
+  ) => {
+    const raw =
+      side === "buy" ? walletBalances.pond : walletBalances.creature;
+    const value = Number(raw || "0") * fraction;
+    const formatted = value
+      .toFixed(6)
+      .replace(/0+$/, "")
+      .replace(/\.$/, "");
+    if (side === "buy") setBuyAmount(formatted || "0");
+    else setSellAmount(formatted || "0");
+  };
 
   const progressPercent =
     live?.progressPercent ?? Math.round(creature.progress * 10000) / 100;
@@ -350,14 +412,26 @@ export default function CreaturePage() {
         <section className="trade-station">
           <div className="trade-box">
             <small>BUY · {creature.pond_symbol} → {creature.symbol}</small>
+            <div className="wallet-line"><span>wallet</span><strong>{walletBalances.pond} {creature.pond_symbol}</strong></div>
             <input value={buyAmount} onChange={(e) => setBuyAmount(e.target.value)} />
+            <div className="amount-presets">
+              <button type="button" onClick={() => setPercentAmount("buy", .25)}>25%</button>
+              <button type="button" onClick={() => setPercentAmount("buy", .5)}>50%</button>
+              <button type="button" onClick={() => setPercentAmount("buy", 1)}>MAX</button>
+            </div>
             <button type="button" disabled={Boolean(busy)} onClick={() => void swap("buy")}>
               {busy === "buy" ? "SPLASHING..." : publicKey ? "BUY CREATURE" : "CONNECT TO BUY"}
             </button>
           </div>
           <div className="trade-box">
             <small>SELL · {creature.symbol} → {creature.pond_symbol}</small>
+            <div className="wallet-line"><span>wallet</span><strong>{walletBalances.creature} {creature.symbol}</strong></div>
             <input value={sellAmount} onChange={(e) => setSellAmount(e.target.value)} />
+            <div className="amount-presets">
+              <button type="button" onClick={() => setPercentAmount("sell", .25)}>25%</button>
+              <button type="button" onClick={() => setPercentAmount("sell", .5)}>50%</button>
+              <button type="button" onClick={() => setPercentAmount("sell", 1)}>MAX</button>
+            </div>
             <button type="button" disabled={Boolean(busy)} onClick={() => void swap("sell")}>
               {busy === "sell" ? "SWIMMING..." : publicKey ? "SELL CREATURE" : "CONNECT TO SELL"}
             </button>
