@@ -307,7 +307,11 @@ export default function HatchPage() {
     setBusy("buy");
     setMessage("building the first buy...");
     try {
-      const response = await fetch("/api/dbc/swap", {
+      const response = await fetch(
+        selected?.launch_engine === "raydium-cpmm"
+          ? "/api/raydium/swap"
+          : "/api/dbc/swap",
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
