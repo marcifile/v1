@@ -40,9 +40,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       TOKEN_PROGRAM_ID
     );
 
-    const progress = await client.state.getPoolQuoteTokenCurveProgress(
-      pool.publicKey
-    );
+    const [progress, feeMetrics] = await Promise.all([
+      client.state.getPoolQuoteTokenCurveProgress(pool.publicKey),
+      client.state.getPoolFeeMetrics(pool.publicKey),
+    ]);
 
     return res.status(200).json({
       pool: pool.publicKey.toBase58(),
@@ -61,6 +62,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       progress,
       progressPercent: Math.round(progress * 10000) / 100,
       isMigrated: Number(state.isMigrated) !== 0,
+      creatorQuoteFeeBaseUnits: feeMetrics.current.creatorQuoteFee.toString(10),
+      creatorQuoteFee: baseUnitsToHuman(
+        feeMetrics.current.creatorQuoteFee,
+        quoteMintState.decimals
+      ),
+      totalTradingQuoteFeeBaseUnits:
+        feeMetrics.total.totalTradingQuoteFee.toString(10),
+      totalTradingQuoteFee: baseUnitsToHuman(
+        feeMetrics.total.totalTradingQuoteFee,
+        quoteMintState.decimals
+      ),
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
