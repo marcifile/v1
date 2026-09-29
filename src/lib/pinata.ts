@@ -33,7 +33,7 @@ export async function pinFile(args: {
   mimeType: string;
 }) {
   const form = new FormData();
-  const blob = new Blob([args.bytes], { type: args.mimeType });
+  const blob = new Blob([Uint8Array.from(args.bytes)], { type: args.mimeType });
   form.append("file", blob, args.fileName);
   form.append(
     "pinataMetadata",
