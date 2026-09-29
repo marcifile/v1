@@ -4,6 +4,7 @@ import {
   deriveDbcPoolAddress,
   DynamicBondingCurveClient,
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
+import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
 import { getServerConnection } from "@/lib/serverSolana";
 
 type Body = {
@@ -24,7 +25,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const body = req.body as Body;
     const configKey = new PublicKey(body.config);
     const baseMintKey = new PublicKey(body.baseMint);
-    const payerKey = new PublicKey(body.payer);
+    const poolCreator = new PublicKey(body.payer);
+    const sponsor = devnetFaucetKeypair();
 
     const name = body.name.trim().slice(0, 32);
     const symbol = body.symbol.trim().toUpperCase().slice(0, 10);
@@ -46,13 +48,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       name,
       symbol,
       uri: body.uri,
-      payer: payerKey,
-      poolCreator: payerKey,
+      payer: sponsor.publicKey,
+      poolCreator,
     });
 
     const latest = await connection.getLatestBlockhash("confirmed");
-    tx.feePayer = payerKey;
+    tx.feePayer = sponsor.publicKey;
     tx.recentBlockhash = latest.blockhash;
+    tx.partialSign(sponsor);
 
     const pool = deriveDbcPoolAddress(
       configState.quoteMint,
@@ -68,6 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       config: configKey.toBase58(),
       pool: pool.toBase58(),
       quoteMint: configState.quoteMint.toBase58(),
+      sponsored: true,
       lastValidBlockHeight: latest.lastValidBlockHeight,
     });
   } catch (error) {
