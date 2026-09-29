@@ -43,6 +43,7 @@ export async function ensureSchema() {
           liquidity_usd DOUBLE PRECISION,
           market_cap_usd DOUBLE PRECISION,
           cluster TEXT NOT NULL DEFAULT 'devnet',
+          launch_engine TEXT NOT NULL DEFAULT 'meteora-dbc',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
@@ -77,6 +78,7 @@ export async function ensureSchema() {
         ALTER TABLE ponds ADD COLUMN IF NOT EXISTS liquidity_usd DOUBLE PRECISION;
         ALTER TABLE ponds ADD COLUMN IF NOT EXISTS market_cap_usd DOUBLE PRECISION;
         ALTER TABLE ponds ADD COLUMN IF NOT EXISTS cluster TEXT NOT NULL DEFAULT 'devnet';
+        ALTER TABLE ponds ADD COLUMN IF NOT EXISTS launch_engine TEXT NOT NULL DEFAULT 'meteora-dbc';
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS telegram_url TEXT;
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS cluster TEXT NOT NULL DEFAULT 'devnet';
 
