@@ -3,6 +3,7 @@ import { readCreatureSnapshot } from "@/lib/chainSnapshot";
 import { withTransaction } from "@/lib/db";
 import { verifyConfirmedTransaction } from "@/lib/verifyTransaction";
 import { normalizeOptionalHttpUrl } from "@/lib/links";
+import { getActiveCluster } from "@/lib/serverSolana";
 
 type Body = {
   baseMint: string;
@@ -27,6 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const body = req.body as Body;
+    const cluster = getActiveCluster();
     const snapshot = await readCreatureSnapshot(body.baseMint);
 
     if (!body.creator || !body.name?.trim() || !body.symbol?.trim()) {
@@ -54,13 +56,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await withTransaction(async (client) => {
       await client.query(
         `
-          INSERT INTO ponds (mint, symbol, name, config, quote_decimals)
-          VALUES ($1, $2, $3, $4, $5)
+          INSERT INTO ponds (mint, symbol, name, config, quote_decimals, cluster)
+          VALUES ($1, $2, $3, $4, $5, $6)
           ON CONFLICT (mint) DO UPDATE SET
             config = EXCLUDED.config,
             quote_decimals = EXCLUDED.quote_decimals,
             symbol = COALESCE(NULLIF(EXCLUDED.symbol, ''), ponds.symbol),
             name = COALESCE(NULLIF(EXCLUDED.name, ''), ponds.name),
+            cluster = EXCLUDED.cluster,
             updated_at = NOW()
         `,
         [
@@ -69,14 +72,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           body.pondName || "Pond Water",
           snapshot.config,
           snapshot.quoteDecimals,
+          cluster,
         ]
       );
 
       await client.query(
         `
           INSERT INTO creatures
-            (mint, pond_mint, pool, config, creator, name, symbol, metadata_uri, image_uri, description, website_url, x_url, telegram_url, launch_tx, status)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+            (mint, pond_mint, pool, config, creator, name, symbol, metadata_uri, image_uri, description, website_url, x_url, telegram_url, launch_tx, status, cluster)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
           ON CONFLICT (mint) DO UPDATE SET
             pool = EXCLUDED.pool,
             config = EXCLUDED.config,
@@ -91,6 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             telegram_url = COALESCE(EXCLUDED.telegram_url, creatures.telegram_url),
             launch_tx = COALESCE(EXCLUDED.launch_tx, creatures.launch_tx),
             status = EXCLUDED.status,
+            cluster = EXCLUDED.cluster,
             updated_at = NOW()
         `,
         [
@@ -109,6 +114,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           telegram,
           body.launchTx || null,
           snapshot.migrated ? "graduated" : "bonding",
+          cluster,
         ]
       );
 
@@ -132,8 +138,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await client.query(
         `
           INSERT INTO events
-            (type, creature_mint, pond_mint, actor, tx_signature, metadata)
-          VALUES ('launch', $1, $2, $3, $4, $5::jsonb)
+            (type, creature_mint, pond_mint, actor, tx_signature, metadata, cluster)
+          VALUES ('launch', $1, $2, $3, $4, $5::jsonb, $6)
           ON CONFLICT DO NOTHING
         `,
         [
@@ -147,6 +153,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             verified: true,
             verifiedSlot: verifiedLaunch.slot,
           }),
+          cluster,
         ]
       );
     });
