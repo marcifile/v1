@@ -33,7 +33,8 @@ export default function PondsPage() {
                   <p>{pond.name || "unnamed water"}</p>
                 </div>
                 <dl>
-                  <div><dt>water in curves</dt><dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 4)}</dd></div>
+                  <div><dt>water in curves</dt><dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 4)} {pond.symbol}</dd></div>
+                  <div><dt>trading fees</dt><dd>{formatBaseUnits(pond.total_trading_quote_fee_base_units, pond.quote_decimals, 4)} {pond.symbol}</dd></div>
                   <div><dt>mint</dt><dd>{shortAddress(pond.mint, 6)}</dd></div>
                   <div><dt>dbc config</dt><dd>{shortAddress(pond.config, 6)}</dd></div>
                 </dl>
