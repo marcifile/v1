@@ -281,7 +281,7 @@ export default function CreaturePage() {
           <div className="page-title manual-title">
             <span>FIELD GUIDE</span>
             <h1>not found</h1>
-            <p>{error || "this creature is not in the POND registry yet."}</p>
+            <p>{error || "this creature is not in the p0nd registry yet."}</p>
           </div>
         </main>
       </Shell>
