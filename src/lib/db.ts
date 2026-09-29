@@ -69,8 +69,13 @@ export async function ensureSchema() {
           migration_threshold NUMERIC(40, 0) NOT NULL DEFAULT 0,
           progress DOUBLE PRECISION NOT NULL DEFAULT 0,
           migrated BOOLEAN NOT NULL DEFAULT FALSE,
+          creator_quote_fee NUMERIC(40, 0) NOT NULL DEFAULT 0,
+          total_trading_quote_fee NUMERIC(40, 0) NOT NULL DEFAULT 0,
           recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+
+        ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS creator_quote_fee NUMERIC(40, 0) NOT NULL DEFAULT 0;
+        ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS total_trading_quote_fee NUMERIC(40, 0) NOT NULL DEFAULT 0;
 
         CREATE INDEX IF NOT EXISTS snapshots_creature_time_idx
           ON snapshots(creature_mint, recorded_at DESC);
