@@ -5,11 +5,12 @@ import {
   DynamicBondingCurveClient,
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { deriveDevnetKeypair } from "@/lib/devnetFaucet";
-import { ensureDevnetSponsor, parsePublicKey } from "@/lib/devnetSponsor";
+import { ensureDevnetSponsor } from "@/lib/devnetSponsor";
 import { buildDevnetPondCurve } from "@/lib/dbcPreset";
 import { ensureSchema, getDb } from "@/lib/db";
 import { POND_PROJECT_WALLET } from "@/lib/serverSolana";
 import { consumeRateLimit } from "@/lib/rateLimit";
+import { extractSolanaAddress } from "@/lib/addressInput";
 
 type Body = {
   mint: string;
@@ -31,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const quoteMint = parsePublicKey(req.body?.mint, "Pond mint");
+    const quoteMint = extractSolanaAddress(req.body?.mint, "Pond mint");
     const labelSymbol = String(req.body?.symbol || "QUOTE")
       .trim()
       .toUpperCase()
