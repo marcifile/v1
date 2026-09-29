@@ -16,10 +16,16 @@ export async function verifyConfirmedTransaction(args: {
   );
 
   const connection = getServerConnection();
-  const parsed = await connection.getParsedTransaction(args.signature, {
-    commitment: "confirmed",
-    maxSupportedTransactionVersion: 0,
-  });
+
+  let parsed = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    parsed = await connection.getParsedTransaction(args.signature, {
+      commitment: "confirmed",
+      maxSupportedTransactionVersion: 0,
+    });
+    if (parsed) break;
+    await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+  }
 
   if (!parsed) {
     throw new Error("Transaction was not found or is not confirmed yet.");
