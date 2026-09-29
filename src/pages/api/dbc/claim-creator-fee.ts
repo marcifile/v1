@@ -5,6 +5,7 @@ import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk
 import { baseUnitsToHuman } from "@/lib/units";
 import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
 import { getServerConnection } from "@/lib/serverSolana";
+import { ensureSchema, getDb } from "@/lib/db";
 import { consumeRateLimit } from "@/lib/rateLimit";
 
 type Body = {
@@ -29,6 +30,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const body = req.body as Body;
     const baseMint = new PublicKey(String(body.baseMint || ""));
     const creator = new PublicKey(String(body.creator || ""));
+
+    await ensureSchema();
+    const registered = await getDb().query(
+      "SELECT creator FROM creatures WHERE mint = $1",
+      [baseMint.toBase58()]
+    );
+    if (registered.rowCount === 0) {
+      return res.status(403).json({
+        error: "That token is not a registered POND creature.",
+      });
+    }
+    if (String(registered.rows[0].creator) !== creator.toBase58()) {
+      return res.status(403).json({
+        error: "Connected wallet is not the registered creature creator.",
+      });
+    }
+
     const sponsor = devnetFaucetKeypair();
     const connection = getServerConnection();
     const client = new DynamicBondingCurveClient(connection, "confirmed");
