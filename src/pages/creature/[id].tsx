@@ -12,6 +12,9 @@ type LiveStatus = {
   migrationQuoteThreshold: string;
   progressPercent: number;
   isMigrated: boolean;
+  creatorQuoteFee: string;
+  totalTradingQuoteFee: string;
+  creatorTradingFeePercentage: number;
   updatedAt: string;
 };
 
@@ -67,6 +70,81 @@ export default function CreaturePage() {
     const timer = window.setInterval(() => void loadStatus(), 8000);
     return () => window.clearInterval(timer);
   }, [id, loadStatus]);
+
+  const claimCreatorFees = async () => {
+    if (!publicKey || !signTransaction) {
+      setVisible(true);
+      return;
+    }
+    if (!creature) return;
+
+    if (publicKey.toBase58() !== creature.creator) {
+      setTradeLog("only this creature's creator can claim its creator fees.");
+      return;
+    }
+
+    setBusy("claim");
+    setTradeLog("opening the creator fee jar...");
+
+    try {
+      const response = await fetch("/api/dbc/claim-creator-fee", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseMint: creature.mint,
+          creator: publicKey.toBase58(),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "could not build creator fee claim.");
+      }
+
+      const tx = Transaction.from(Buffer.from(data.transaction, "base64"));
+      const signed = await signTransaction(tx);
+      const signature = await connection.sendRawTransaction(signed.serialize(), {
+        skipPreflight: false,
+        maxRetries: 3,
+      });
+      const confirmation = await connection.confirmTransaction(
+        signature,
+        "confirmed"
+      );
+      if (confirmation.value.err) {
+        throw new Error(
+          "transaction failed: " + JSON.stringify(confirmation.value.err)
+        );
+      }
+
+      await fetch("/api/creatures/record-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseMint: creature.mint,
+          type: "claim_creator_fee",
+          actor: publicKey.toBase58(),
+          txSignature: signature,
+          amountOut: data.claimQuote,
+        }),
+      });
+
+      await Promise.all([loadStatus(), refresh()]);
+      setTradeLog(
+        "creator fees claimed · " +
+          data.claimQuote +
+          " " +
+          (creature.pond_symbol || "QUOTE") +
+          " · " +
+          shortAddress(signature, 6)
+      );
+    } catch (err) {
+      setTradeLog(
+        err instanceof Error ? err.message : "creator fee claim failed."
+      );
+    } finally {
+      setBusy("");
+    }
+  };
 
   const swap = async (direction: "buy" | "sell") => {
     if (!publicKey || !signTransaction) {
@@ -170,6 +248,23 @@ export default function CreaturePage() {
       creature.quote_decimals,
       6
     );
+  const creatorFee =
+    live?.creatorQuoteFee ??
+    formatBaseUnits(
+      creature.creator_quote_fee_base_units,
+      creature.quote_decimals,
+      6
+    );
+  const totalTradingFee =
+    live?.totalTradingQuoteFee ??
+    formatBaseUnits(
+      creature.total_trading_quote_fee_base_units,
+      creature.quote_decimals,
+      6
+    );
+  const creatorFeeShare = live?.creatorTradingFeePercentage ?? 50;
+  const isCreator =
+    Boolean(publicKey) && publicKey?.toBase58() === creature.creator;
 
   return (
     <Shell>
@@ -204,6 +299,8 @@ export default function CreaturePage() {
             <div className="specimen-stat"><small>WATER / QUOTE RESERVE</small><strong>{water} {creature.pond_symbol}</strong></div>
             <div className="specimen-stat"><small>GRADUATES AT</small><strong>{threshold} {creature.pond_symbol}</strong></div>
             <div className="specimen-stat"><small>GRADUATION</small><strong>{progressPercent}%</strong></div>
+            <div className="specimen-stat fee-stat"><small>TOTAL TRADING FEES</small><strong>{totalTradingFee} {creature.pond_symbol}</strong></div>
+            <div className="specimen-stat fee-stat"><small>CREATOR FEES CLAIMABLE</small><strong>{creatorFee} {creature.pond_symbol}</strong><span>{creatorFeeShare}% creator share configured on the DBC</span></div>
 
             <div className="specimen-meter"><span style={{ width: Math.max(0, Math.min(100, progressPercent)) + "%" }} /></div>
 
@@ -220,6 +317,33 @@ export default function CreaturePage() {
                 ? "graduated into deeper water."
                 : "live · water updates automatically"}
             </p>
+          </div>
+        </section>
+
+        <section className="creator-vault">
+          <div>
+            <small>CREATOR ECONOMICS</small>
+            <h2>the dev earns in the pond token.</h2>
+            <p>
+              This creature's DBC is configured so the creator receives {creatorFeeShare}% of
+              the creator/partner trading-fee share. Because fees are collected in the quote
+              token, the creator earns {creature.pond_symbol}, not {creature.symbol}.
+            </p>
+          </div>
+          <div className="creator-vault-readout">
+            <small>CLAIMABLE NOW</small>
+            <strong>{creatorFee} {creature.pond_symbol}</strong>
+            {isCreator ? (
+              <button
+                type="button"
+                disabled={Boolean(busy) || Number(creatorFee) <= 0}
+                onClick={() => void claimCreatorFees()}
+              >
+                {busy === "claim" ? "CLAIMING..." : "CLAIM CREATOR FEES"}
+              </button>
+            ) : (
+              <span>only the on-chain creator can claim</span>
+            )}
           </div>
         </section>
 
