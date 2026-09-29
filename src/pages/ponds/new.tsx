@@ -64,7 +64,7 @@ export default function OpenPondPage() {
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState(
-    "paste an existing Solana token. p0nd will verify it before anything is created."
+    "paste a CA. p0nd will fetch the token and show you exactly what will become the pond."
   );
 
   const inspect = async (override?: string) => {
@@ -72,7 +72,7 @@ export default function OpenPondPage() {
     if (!rawInput) return;
     setBusy("inspect");
     setPrepared(null);
-    setMessage("checking the token, market and Meteora compatibility...");
+    setMessage("fetching token...");
     try {
       const response = await fetch(
         "/api/tokens/inspect?mint=" + encodeURIComponent(rawInput),
@@ -84,7 +84,7 @@ export default function OpenPondPage() {
       setInput(data.mint);
       setMessage(
         data.eligibility?.eligible
-          ? "token verified · this can become a p0nd habitat."
+          ? "token found · ready to open as a pond."
           : "not eligible yet · " +
             (data.eligibility?.reasons?.join(" · ") ||
               data.warnings?.[0] ||
@@ -178,26 +178,24 @@ export default function OpenPondPage() {
     <Shell>
       <main className="page open-pond-page">
         <div className="page-title manual-title">
-          <span>OPEN A POND · ONE-TIME REGISTRATION</span>
-          <h1>make a token a habitat</h1>
+          <span>OPEN A POND</span>
+          <h1>paste a CA. open a pond.</h1>
           <p>
-            The pond asset already exists. Paste any compatible Solana token — including
-            a Pump.fun token — or use native SOL. p0nd creates the reusable Meteora quote config;
-            it does not re-mint or custody the pond asset.
+            the token already exists. paste its CA, p0nd fetches it, and that token becomes the currency for every creature launched inside its pond.
           </p>
         </div>
 
         <section className="open-pond-flow">
           <div className="open-pond-step">
-            <small>01 · EXISTING TOKEN</small>
+            <small>01 · PASTE CA</small>
             <strong>$PAID</strong>
-            <span>already live on Solana</span>
+            <span>existing coin</span>
           </div>
           <b>→</b>
           <div className="open-pond-step active">
-            <small>02 · OPEN ON p0nd</small>
+            <small>02 · OPEN POND</small>
             <strong>PAID POND</strong>
-            <span>register once</span>
+            <span>one habitat</span>
           </div>
           <b>→</b>
           <div className="open-pond-step">
@@ -209,7 +207,7 @@ export default function OpenPondPage() {
 
         <section className="open-pond-console">
           <label>
-            <span>TOKEN CA OR MARKET LINK</span>
+            <span>CONTRACT ADDRESS</span>
             <div className="pond-input-row">
               <input
                 value={input}
@@ -218,22 +216,10 @@ export default function OpenPondPage() {
                   setInspection(null);
                   setPrepared(null);
                 }}
-                placeholder="paste CA, Pump.fun, Axiom, DexScreener link — or type SOL"
+                placeholder="paste CA"
               />
               <button type="button" disabled={busy === "inspect"} onClick={() => void inspect()}>
-                {busy === "inspect" ? "CHECKING..." : "INSPECT TOKEN"}
-              </button>
-              <button
-                type="button"
-                disabled={busy === "inspect"}
-                onClick={() => {
-                  setInput("SOL");
-                  setInspection(null);
-                  setPrepared(null);
-                  void inspect("SOL");
-                }}
-              >
-                USE SOL
+                {busy === "inspect" ? "FETCHING..." : "FETCH TOKEN"}
               </button>
             </div>
           </label>
@@ -243,7 +229,7 @@ export default function OpenPondPage() {
               <div className="open-pond-token">
                 {inspection.imageUri ? <img src={mediaUrl(inspection.imageUri)} alt="" /> : <div>◌</div>}
                 <span>
-                  <small>VERIFIED MINT</small>
+                  <small>FOUND</small>
                   <strong>{"$" + (inspection.symbol || "TOKEN")}</strong>
                   <b>{inspection.name || shortAddress(inspection.mint, 7)}</b>
                 </span>
@@ -255,10 +241,10 @@ export default function OpenPondPage() {
                 <div><dt>market liquidity</dt><dd>{money(inspection.market?.liquidityUsd)}</dd></div>
                 <div><dt>market cap</dt><dd>{money(inspection.market?.marketCap)}</dd></div>
                 <div><dt>decimals</dt><dd>{inspection.decimals}</dd></div>
-                <div><dt>source</dt><dd>{inspection.origin === "pump.fun" ? "PUMP.FUN / PUMPSWAP" : inspection.origin === "native-sol" ? "NATIVE SOL" : "SOLANA TOKEN"}</dd></div>
+                <div><dt>origin</dt><dd>{inspection.origin === "pump.fun" ? "PUMP.FUN / PUMPSWAP" : inspection.origin === "native-sol" ? "SOL" : "ON-CHAIN"}</dd></div>
                 <div><dt>token program</dt><dd>{inspection.tokenProgram === "token-2022" ? "TOKEN-2022" : "SPL TOKEN"}</dd></div>
                 <div><dt>Meteora badge</dt><dd>{inspection.tokenProgram === "token-2022" ? (inspection.tokenBadgeExists ? "FOUND" : "MISSING") : "NOT NEEDED"}</dd></div>
-                <div><dt>p0nd</dt><dd>{inspection.eligibility?.eligible ? "ELIGIBLE" : "NOT ELIGIBLE"}</dd></div>
+                <div><dt>pond</dt><dd>{inspection.eligibility?.eligible ? "READY" : "NOT COMPATIBLE"}</dd></div>
               </dl>
 
               {(inspection.eligibility?.reasons?.length > 0 || inspection.warnings.length > 0) && (
@@ -282,22 +268,24 @@ export default function OpenPondPage() {
           <button
             className="open-pond-button"
             type="button"
-            disabled={Boolean(busy) || !inspection?.eligibility?.eligible}
-            onClick={() => void openPond()}
+            disabled={Boolean(busy)}
+            onClick={() => inspection ? void openPond() : void inspect()}
           >
-            {busy === "open"
+            {busy === "inspect"
+              ? "FETCHING TOKEN..."
+              : busy === "open"
               ? "OPENING POND..."
+              : !inspection
+              ? "FETCH TOKEN"
               : inspection && !inspection.eligibility?.eligible
-              ? "TOKEN NOT ELIGIBLE"
+              ? "NOT COMPATIBLE"
               : publicKey
-              ? "OPEN THIS POND"
-              : "CONNECT WALLET TO OPEN"}
+              ? "OPEN POND"
+              : "CONNECT WALLET & OPEN"}
           </button>
 
           <p className="open-pond-note">
-            Opening a pond does not transfer the pond token to p0nd and does not give
-            anyone ownership of that token. It creates the reusable launch configuration
-            that future creature markets use as their quote asset.
+            p0nd does not take ownership of the existing coin. opening a pond simply makes that coin the quote currency for creatures launched inside it.
           </p>
         </section>
 
