@@ -51,11 +51,16 @@ export async function ensureSchema() {
           name TEXT NOT NULL,
           symbol TEXT NOT NULL,
           metadata_uri TEXT,
+          image_uri TEXT,
+          description TEXT,
           launch_tx TEXT,
           status TEXT NOT NULL DEFAULT 'bonding',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+
+        ALTER TABLE creatures ADD COLUMN IF NOT EXISTS image_uri TEXT;
+        ALTER TABLE creatures ADD COLUMN IF NOT EXISTS description TEXT;
 
         CREATE TABLE IF NOT EXISTS snapshots (
           id BIGSERIAL PRIMARY KEY,
