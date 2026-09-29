@@ -38,6 +38,7 @@ export async function ensureSchema() {
           name TEXT,
           config TEXT UNIQUE NOT NULL,
           quote_decimals INTEGER NOT NULL DEFAULT 0,
+          cluster TEXT NOT NULL DEFAULT 'devnet',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
@@ -58,6 +59,7 @@ export async function ensureSchema() {
           telegram_url TEXT,
           launch_tx TEXT,
           status TEXT NOT NULL DEFAULT 'bonding',
+          cluster TEXT NOT NULL DEFAULT 'devnet',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
@@ -66,7 +68,9 @@ export async function ensureSchema() {
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS description TEXT;
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS website_url TEXT;
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS x_url TEXT;
+        ALTER TABLE ponds ADD COLUMN IF NOT EXISTS cluster TEXT NOT NULL DEFAULT 'devnet';
         ALTER TABLE creatures ADD COLUMN IF NOT EXISTS telegram_url TEXT;
+        ALTER TABLE creatures ADD COLUMN IF NOT EXISTS cluster TEXT NOT NULL DEFAULT 'devnet';
 
         CREATE TABLE IF NOT EXISTS snapshots (
           id BIGSERIAL PRIMARY KEY,
@@ -96,8 +100,15 @@ export async function ensureSchema() {
           amount_in TEXT,
           amount_out TEXT,
           metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+          cluster TEXT NOT NULL DEFAULT 'devnet',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+
+        ALTER TABLE events ADD COLUMN IF NOT EXISTS cluster TEXT NOT NULL DEFAULT 'devnet';
+
+        CREATE INDEX IF NOT EXISTS ponds_cluster_idx ON ponds(cluster);
+        CREATE INDEX IF NOT EXISTS creatures_cluster_idx ON creatures(cluster);
+        CREATE INDEX IF NOT EXISTS events_cluster_time_idx ON events(cluster, created_at DESC);
 
         CREATE INDEX IF NOT EXISTS events_time_idx
           ON events(created_at DESC);
