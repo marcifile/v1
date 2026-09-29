@@ -242,7 +242,7 @@ export default function CreaturePage() {
         </section>
 
         <section className="activity-panel">
-          <header><small>RECENT RIPples</small><strong>ACTIVITY</strong></header>
+          <header><small>RECENT RIPPLES</small><strong>ACTIVITY</strong></header>
           {events.map((event) => (
             <div className="activity-row" key={event.id}>
               <time>{new Date(event.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
