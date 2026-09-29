@@ -69,7 +69,7 @@ export function WorldFrame() {
         <div className="hero-copy">
           <div className="hero-kicker">WELCOME TO</div>
           <h1>pond</h1>
-          <p>coins living in other coins.</p>
+          <p>launch real coins priced in other coins.</p>
           <div className="hero-actions">
             <Link href="/hatch">Hatch a creature</Link>
             <Link href="/docs">How it flows</Link>
