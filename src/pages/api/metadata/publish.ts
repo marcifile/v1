@@ -94,7 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         fileName: symbol.toLowerCase() + "-" + baseMint.slice(0, 8) + "." + extension,
         mimeType: parsed.mimeType,
       });
-      imageUri = "ipfs://" + imageCid;
+      imageUri = ipfsGateway(imageCid);
     }
 
     const metadata = {
