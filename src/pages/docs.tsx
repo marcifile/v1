@@ -254,9 +254,9 @@ export default function DocsPage() {
           <p>
             Meteora DBC tracks quote reserve against a configured migration
             threshold. Once the threshold is reached, the pool is eligible for
-            migration to DAMM v2. The current WATER threshold is intentionally
-            tiny for devnet testing; a mainnet PAID/BONK/etc. pond needs a
-            threshold based on the value and liquidity of that quote token.
+            migration to DAMM v2. Each pond gets its own quote-token threshold
+            from the current $25,000 USD migration target at registration time,
+            converted using the inspected quote-token price.
           </p>
         </section>
 
@@ -284,10 +284,10 @@ export default function DocsPage() {
           <p>
             A pond token already exists before p0nd sees it. Registering a pond
             simply creates/reuses the DBC configuration that lets future
-            creatures quote against that mint. Devnet v1 currently supports
-            standard SPL quote mints. Mainnet should additionally require
-            liquidity, a reliable price source and compatibility with Meteora
-            quote-token requirements before a pond opens for launches.
+            creatures quote against that mint. Mainnet v1 currently supports
+            standard SPL quote mints that pass compatibility checks, have a
+            reliable USD price, and meet the current $10,000 detected market
+            liquidity floor before a pond opens for launches.
           </p>
         </section>
 
