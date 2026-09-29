@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { PublicKey } from "@solana/web3.js";
 import { getMint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk";
+import {
+  deriveTokenBadgeAddress,
+  DynamicBondingCurveClient,
+} from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { buildDevnetPondCurve, DEVNET_POND_PRESET } from "@/lib/dbcPreset";
 import { getServerConnection, POND_PROJECT_WALLET } from "@/lib/serverSolana";
 
@@ -44,12 +47,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const curveConfig = buildDevnetPondCurve(mint.decimals);
     const client = new DynamicBondingCurveClient(connection, "confirmed");
+    const tokenBadgeState = await client.state
+      .getTokenBadge(quoteMintKey)
+      .catch(() => null);
+    const tokenBadge = tokenBadgeState
+      ? deriveTokenBadgeAddress(quoteMintKey)
+      : undefined;
     const tx = await client.partner.createConfig({
       config: configKey,
       feeClaimer: POND_PROJECT_WALLET,
       leftoverReceiver: POND_PROJECT_WALLET,
       payer: payerKey,
       quoteMint: quoteMintKey,
+      tokenBadge,
       ...curveConfig,
     });
 
