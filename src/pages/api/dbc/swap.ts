@@ -7,6 +7,7 @@ import {
   DynamicBondingCurveClient,
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { baseUnitsToHuman, humanToBaseUnits } from "@/lib/units";
+import { devnetFaucetKeypair } from "@/lib/devnetFaucet";
 import { getServerConnection } from "@/lib/serverSolana";
 
 type Body = {
@@ -26,6 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const body = req.body as Body;
     const baseMint = new PublicKey(body.baseMint);
     const owner = new PublicKey(body.owner);
+    const sponsor = devnetFaucetKeypair();
     const connection = getServerConnection();
     const client = new DynamicBondingCurveClient(connection, "confirmed");
 
@@ -96,7 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const tx = await client.pool.swap({
       owner,
-      payer: owner,
+      payer: sponsor.publicKey,
       pool: pool.publicKey,
       amountIn,
       minimumAmountOut: quote.minimumAmountOut,
@@ -105,8 +107,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const latest = await connection.getLatestBlockhash("confirmed");
-    tx.feePayer = owner;
+    tx.feePayer = sponsor.publicKey;
     tx.recentBlockhash = latest.blockhash;
+    tx.partialSign(sponsor);
 
     return res.status(200).json({
       transaction: tx
@@ -121,6 +124,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         outputDecimals
       ),
       tradingFeeBaseUnits: quote.tradingFee.toString(10),
+      sponsored: true,
       lastValidBlockHeight: latest.lastValidBlockHeight,
     });
   } catch (error) {
