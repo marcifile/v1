@@ -28,7 +28,7 @@ export default function PondsPage() {
         <div className="ponds-explain-strip">
           <div><small>1 · START WITH</small><strong>an existing token</strong></div>
           <b>→</b>
-          <div><small>2 · REGISTER ONCE</small><strong>one reusable DBC config</strong></div>
+          <div><small>2 · REGISTER ONCE</small><strong>one compatible launch route</strong></div>
           <b>→</b>
           <div><small>3 · THEN LAUNCH</small><strong>many creature markets</strong></div>
         </div>
@@ -53,12 +53,12 @@ export default function PondsPage() {
                   <p>{pond.name || "unnamed water"}</p>
                 </div>
                 <dl>
-                  <div><dt>water in curves</dt><dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 4)} {pond.symbol}</dd></div>
+                  <div><dt>indexed quote reserve</dt><dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 4)} {pond.symbol}</dd></div>
                   <div><dt>market price</dt><dd>{pond.price_usd ? "$" + Number(pond.price_usd).toLocaleString(undefined, { maximumSignificantDigits: 6 }) : "—"}</dd></div>
                   <div><dt>market liquidity</dt><dd>{pond.liquidity_usd ? "$" + Number(pond.liquidity_usd).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—"}</dd></div>
                   <div><dt>trading fees</dt><dd>{formatBaseUnits(pond.total_trading_quote_fee_base_units, pond.quote_decimals, 4)} {pond.symbol}</dd></div>
                   <div><dt>mint</dt><dd>{shortAddress(pond.mint, 6)}</dd></div>
-                  <div><dt>dbc config</dt><dd>{shortAddress(pond.config, 6)}</dd></div>
+                  <div><dt>launch route</dt><dd>{pond.launch_engine === "raydium-cpmm" ? "RAYDIUM CPMM" : "METEORA DBC"}</dd></div>
                 </dl>
                 <span className="habitat-action">OPEN HABITAT →</span>
               </div>
