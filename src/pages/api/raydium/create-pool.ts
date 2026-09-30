@@ -4,6 +4,7 @@ import { PublicKey, Transaction } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import {
   CREATE_CPMM_POOL_FEE_ACC,
@@ -43,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await ensureSchema();
     const pondResult = await getDb().query(
       `
-        SELECT mint, quote_decimals, launch_engine
+        SELECT mint, symbol, quote_decimals, launch_engine
         FROM ponds
         WHERE mint = $1 AND cluster = 'mainnet'
         LIMIT 1
@@ -81,6 +82,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const quoteAmount = humanToBaseUnits(body.quoteLiquidity, Number(pond.quote_decimals));
     if (baseAmount.lte(new BN(0)) || quoteAmount.lte(new BN(0))) {
       return res.status(400).json({ error: "Initial liquidity amounts must be greater than zero." });
+    }
+
+    const quoteAta = getAssociatedTokenAddressSync(
+      pondMint,
+      payer,
+      false,
+      quoteProgram
+    );
+    const quoteAtaInfo = await connection.getAccountInfo(quoteAta, "confirmed");
+    const walletQuoteBalance = quoteAtaInfo
+      ? await connection.getTokenAccountBalance(quoteAta, "confirmed")
+      : null;
+    const availableQuote = new BN(walletQuoteBalance?.value.amount || "0");
+
+    if (availableQuote.lt(quoteAmount)) {
+      return res.status(400).json({
+        error:
+          "you need " +
+          body.quoteLiquidity +
+          " " +
+          (pond.symbol || "pond tokens") +
+          " for initial liquidity; this wallet has " +
+          (walletQuoteBalance?.value.uiAmountString || "0") +
+          ".",
+      });
     }
 
     const raydium = await loadRaydium(payer);
