@@ -41,10 +41,12 @@ type Inspection = {
 
 type Prepared = {
   alreadyRegistered: boolean;
+  registeredNow?: boolean;
+  launchEngine?: "meteora-dbc" | "raydium-cpmm";
   transaction?: string;
   quoteMint?: string;
   config?: string;
-  pond?: { mint: string; symbol: string; name: string; config: string };
+  pond?: { mint: string; symbol: string; name: string; config: string; launch_engine?: "meteora-dbc" | "raydium-cpmm" };
   inspection: Inspection;
   economics?: {
     migrationTargetUsd: number | null;
