@@ -239,7 +239,7 @@ export default function OpenPondPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mint: data.quoteMint,
-          payer: publicKey.toBase58(),
+          payer: publicKey!.toBase58(),
           signature,
         }),
       });
