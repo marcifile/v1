@@ -3,7 +3,7 @@ import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { Transaction } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { usePondWalletConnect } from "@/hooks/usePondWalletConnect";
 import { Shell } from "@/components/Shell";
 import { mediaUrl, shortAddress } from "@/lib/display";
 import { useWorld } from "@/hooks/useWorld";
@@ -128,7 +128,7 @@ export default function OpenPondPage({
   const router = useRouter();
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { connectWallet, walletConnecting } = usePondWalletConnect();
   const { refresh } = useWorld();
 
   const [input, setInput] = useState(initialInput);
@@ -172,10 +172,6 @@ export default function OpenPondPage({
   };
 
   const openPond = async () => {
-    if (!publicKey || !signTransaction) {
-      setVisible(true);
-      return;
-    }
     if (!inspection?.eligibility?.eligible) {
       setMessage(
         inspection?.eligibility?.reasons?.join(" · ") ||
@@ -184,15 +180,24 @@ export default function OpenPondPage({
       return;
     }
 
+    if (inspection.launchEngine !== "raydium-cpmm" && (!publicKey || !signTransaction)) {
+      connectWallet();
+      return;
+    }
+
     setBusy("open");
-    setMessage("building the one-time pond registration...");
+    setMessage(
+      inspection.launchEngine === "raydium-cpmm"
+        ? "opening pond..."
+        : "building the one-time pond registration..."
+    );
     try {
       const response = await fetch("/api/ponds/prepare-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mint: inspection.mint,
-          payer: publicKey.toBase58(),
+          payer: publicKey?.toBase58() || null,
         }),
       });
       const data = (await response.json()) as Prepared & { error?: string };
@@ -201,7 +206,11 @@ export default function OpenPondPage({
 
       if (data.alreadyRegistered && data.pond) {
         await refresh();
-        setMessage("$" + data.pond.symbol + " is already an open pond.");
+        setMessage(
+          data.registeredNow
+            ? "$" + data.pond.symbol + " pond opened."
+            : "$" + data.pond.symbol + " is already an open pond."
+        );
         await router.push("/pond/" + data.pond.mint);
         return;
       }
@@ -357,8 +366,12 @@ export default function OpenPondPage({
               ? "FETCH TOKEN"
               : inspection && !inspection.eligibility?.eligible
               ? "NOT COMPATIBLE"
+              : inspection?.launchEngine === "raydium-cpmm"
+              ? "OPEN POND"
               : publicKey
               ? "OPEN POND"
+              : walletConnecting
+              ? "CONNECTING..."
               : "CONNECT WALLET & OPEN"}
           </button>
 
