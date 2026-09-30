@@ -8,7 +8,7 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import { consumeRateLimit } from "@/lib/rateLimit";
 import { ensureSchema, getDb } from "@/lib/db";
-import { getActiveCluster } from "@/lib/serverSolana";
+import { getActiveCluster, getServerConnection } from "@/lib/serverSolana";
 import { loadRaydium } from "@/lib/raydium";
 import { baseUnitsToHuman, humanToBaseUnits } from "@/lib/units";
 
@@ -112,6 +112,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const transaction = built.transaction as Transaction;
+    const connection = getServerConnection();
+    const latest = await connection.getLatestBlockhash("confirmed");
+    transaction.feePayer = owner;
+    transaction.recentBlockhash = latest.blockhash;
 
     return res.status(200).json({
       transaction: transaction
@@ -125,6 +129,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         outputDecimals
       ),
       engine: "raydium-cpmm",
+      lastValidBlockHeight: latest.lastValidBlockHeight,
     });
   } catch (error) {
     return res.status(500).json({
