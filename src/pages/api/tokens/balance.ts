@@ -1,11 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import {
-  getAssociatedTokenAddressSync,
-  NATIVE_MINT,
-  TOKEN_2022_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import { NATIVE_MINT } from "@solana/spl-token";
 import { getServerConnection } from "@/lib/serverSolana";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -22,35 +17,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         amount: lamports / LAMPORTS_PER_SOL,
         amountBaseUnits: String(lamports),
         decimals: 9,
+        accounts: 1,
       });
     }
 
-    const mintAccount = await connection.getAccountInfo(mint, "confirmed");
-    const tokenProgram = mintAccount?.owner.equals(TOKEN_2022_PROGRAM_ID)
-      ? TOKEN_2022_PROGRAM_ID
-      : mintAccount?.owner.equals(TOKEN_PROGRAM_ID)
-      ? TOKEN_PROGRAM_ID
-      : null;
+    // Query by the exact mint instead of assuming the balance is stored in the
+    // canonical associated token account. A wallet can legitimately own the
+    // same mint in multiple token accounts, including Token-2022 accounts.
+    // The mint filter keeps this lookup narrow even for wallets with many assets.
+    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+      owner,
+      { mint },
+      "confirmed"
+    );
 
-    if (!tokenProgram) {
-      return res.status(400).json({ error: "Pond token mint is not a supported Solana token." });
+    let rawTotal = 0n;
+    let decimals = 0;
+    let uiTotal = 0;
+
+    for (const entry of tokenAccounts.value) {
+      const info = (entry.account.data as any)?.parsed?.info;
+      const tokenAmount = info?.tokenAmount;
+      if (!tokenAmount) continue;
+
+      rawTotal += BigInt(String(tokenAmount.amount || "0"));
+      decimals = Number(tokenAmount.decimals || decimals || 0);
+      uiTotal += Number(
+        tokenAmount.uiAmountString || tokenAmount.uiAmount || 0
+      );
     }
 
-    const ata = getAssociatedTokenAddressSync(mint, owner, false, tokenProgram);
-    const ataInfo = await connection.getAccountInfo(ata, "confirmed");
-    if (!ataInfo) {
-      return res.status(200).json({
-        amount: 0,
-        amountBaseUnits: "0",
-        decimals: 0,
-      });
-    }
-
-    const tokenAmount = await connection.getTokenAccountBalance(ata, "confirmed");
     return res.status(200).json({
-      amount: Number(tokenAmount.value.uiAmountString || tokenAmount.value.uiAmount || 0),
-      amountBaseUnits: tokenAmount.value.amount,
-      decimals: tokenAmount.value.decimals,
+      amount: uiTotal,
+      amountBaseUnits: rawTotal.toString(),
+      decimals,
+      accounts: tokenAccounts.value.length,
     });
   } catch (error) {
     return res.status(400).json({
