@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Keypair, Transaction } from "@solana/web3.js";
 import { useRouter } from "next/router";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { usePondWalletConnect } from "@/hooks/usePondWalletConnect";
 import { Shell } from "@/components/Shell";
 import { useWorld } from "@/hooks/useWorld";
 import type { WorldPond } from "@/types/world";
@@ -28,7 +28,7 @@ export default function HatchPage() {
   const router = useRouter();
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { connectWallet, walletConnecting } = usePondWalletConnect();
   const { world, loading, error, refresh } = useWorld(10000);
 
   const [selectedMint, setSelectedMint] = useState("");
@@ -96,7 +96,10 @@ export default function HatchPage() {
   };
 
   const hatch = async () => {
-    if (!publicKey || !signTransaction) return setVisible(true);
+    if (!publicKey || !signTransaction) {
+      connectWallet();
+      return;
+    }
     if (!selected) {
       setMessage("choose a pond first.");
       return;
@@ -379,7 +382,9 @@ export default function HatchPage() {
           <section className="hatch-step hatch-connect">
             <small>WALLET</small>
             <h2>connect to launch</h2>
-            <button type="button" onClick={() => setVisible(true)}>Connect wallet</button>
+            <button type="button" disabled={walletConnecting} onClick={connectWallet}>
+              {walletConnecting ? "Connecting..." : "Connect wallet"}
+            </button>
           </section>
         )}
 
