@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { PublicKey, Transaction } from "@solana/web3.js";
-import {
-  getAssociatedTokenAddress,
-  TOKEN_PROGRAM_ID,
-  TOKEN_2022_PROGRAM_ID,
-} from "@solana/spl-token";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { Transaction } from "@solana/web3.js";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Shell } from "@/components/Shell";
 import { useWorld } from "@/hooks/useWorld";
@@ -32,7 +27,6 @@ export default function CreaturePage() {
   const router = useRouter();
   const id = String(router.query.id ?? "");
   const { world, loading, error, refresh } = useWorld(10000);
-  const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   const { setVisible } = useWalletModal();
 
@@ -67,49 +61,37 @@ export default function CreaturePage() {
     }
 
     try {
-      const pondMint = new PublicKey(creature.pond_mint);
-      const pondMintAccount = await connection.getAccountInfo(
-        pondMint,
-        "confirmed"
-      );
-      const pondTokenProgram = pondMintAccount?.owner.equals(TOKEN_2022_PROGRAM_ID)
-        ? TOKEN_2022_PROGRAM_ID
-        : TOKEN_PROGRAM_ID;
-
-      const [pondAta, creatureAta] = await Promise.all([
-        getAssociatedTokenAddress(
-          pondMint,
-          publicKey,
-          false,
-          pondTokenProgram
+      const owner = encodeURIComponent(publicKey.toBase58());
+      const [pondResponse, creatureResponse] = await Promise.all([
+        fetch(
+          "/api/tokens/balance?owner=" +
+            owner +
+            "&mint=" +
+            encodeURIComponent(creature.pond_mint),
+          { cache: "no-store" }
         ),
-        getAssociatedTokenAddress(
-          new PublicKey(creature.mint),
-          publicKey,
-          false,
-          TOKEN_PROGRAM_ID
+        fetch(
+          "/api/tokens/balance?owner=" +
+            owner +
+            "&mint=" +
+            encodeURIComponent(creature.mint),
+          { cache: "no-store" }
         ),
       ]);
 
-      const [pondBalance, creatureBalance] = await Promise.all([
-        connection
-          .getTokenAccountBalance(pondAta, "confirmed")
-          .then((result) => result.value.uiAmountString || "0")
-          .catch(() => "0"),
-        connection
-          .getTokenAccountBalance(creatureAta, "confirmed")
-          .then((result) => result.value.uiAmountString || "0")
-          .catch(() => "0"),
+      const [pondData, creatureData] = await Promise.all([
+        pondResponse.json(),
+        creatureResponse.json(),
       ]);
 
       setWalletBalances({
-        pond: pondBalance,
-        creature: creatureBalance,
+        pond: pondResponse.ok ? String(pondData.amount || "0") : "0",
+        creature: creatureResponse.ok ? String(creatureData.amount || "0") : "0",
       });
     } catch {
       setWalletBalances({ pond: "0", creature: "0" });
     }
-  }, [connection, creature, publicKey]);
+  }, [creature, publicKey]);
 
   const loadStatus = useCallback(async () => {
     if (!id) return;
@@ -144,6 +126,28 @@ export default function CreaturePage() {
     }, 8000);
     return () => window.clearInterval(timer);
   }, [id, loadStatus, loadBalances]);
+
+  const submitSignedTransaction = useCallback(
+    async (transaction: Transaction) => {
+      if (!signTransaction) throw new Error("Connect a wallet first.");
+
+      const signed = await signTransaction(transaction);
+      const response = await fetch("/api/solana/send-transaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transaction: Buffer.from(signed.serialize()).toString("base64"),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Could not submit transaction.");
+      }
+      return String(data.signature);
+    },
+    [signTransaction]
+  );
+
 
   const claimCreatorFees = async () => {
     if (!publicKey || !signTransaction) {
@@ -180,20 +184,7 @@ export default function CreaturePage() {
       }
 
       const tx = Transaction.from(Buffer.from(data.transaction, "base64"));
-      const signed = await signTransaction(tx);
-      const signature = await connection.sendRawTransaction(signed.serialize(), {
-        skipPreflight: false,
-        maxRetries: 3,
-      });
-      const confirmation = await connection.confirmTransaction(
-        signature,
-        "confirmed"
-      );
-      if (confirmation.value.err) {
-        throw new Error(
-          "transaction failed: " + JSON.stringify(confirmation.value.err)
-        );
-      }
+      const signature = await submitSignedTransaction(tx);
 
       await fetch("/api/creatures/record-event", {
         method: "POST",
@@ -233,6 +224,38 @@ export default function CreaturePage() {
     if (!creature) return;
 
     const amount = direction === "buy" ? buyAmount : sellAmount;
+    const numericAmount = Number(amount);
+    const available =
+      direction === "buy"
+        ? Number(walletBalances.pond || "0")
+        : Number(walletBalances.creature || "0");
+
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setTradeLog("enter an amount greater than 0.");
+      return;
+    }
+
+    if (numericAmount > available + 1e-12) {
+      setTradeLog(
+        direction === "buy"
+          ? "you need " +
+              amount +
+              " " +
+              (creature.pond_symbol || "pond tokens") +
+              "; this wallet has " +
+              walletBalances.pond +
+              "."
+          : "you need " +
+              amount +
+              " " +
+              creature.symbol +
+              "; this wallet has " +
+              walletBalances.creature +
+              "."
+      );
+      return;
+    }
+
     setBusy(direction);
     setTradeLog(direction === "buy" ? "making a splash..." : "swimming back...");
 
@@ -256,18 +279,7 @@ export default function CreaturePage() {
       if (!response.ok) throw new Error(data.error || "swap build failed.");
 
       const tx = Transaction.from(Buffer.from(data.transaction, "base64"));
-      const signed = await signTransaction(tx);
-      const signature = await connection.sendRawTransaction(signed.serialize(), {
-        skipPreflight: false,
-        maxRetries: 3,
-      });
-      const confirmation = await connection.confirmTransaction(
-        signature,
-        "confirmed"
-      );
-      if (confirmation.value.err) {
-        throw new Error("transaction failed: " + JSON.stringify(confirmation.value.err));
-      }
+      const signature = await submitSignedTransaction(tx);
 
       await fetch("/api/creatures/record-event", {
         method: "POST",
