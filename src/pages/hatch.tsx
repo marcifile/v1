@@ -350,7 +350,9 @@ export default function HatchPage() {
           firstBuy +
           " " +
           (selected?.symbol || "QUOTE") +
-          " entered the curve."
+          (selected?.launch_engine === "raydium-cpmm"
+            ? " entered the pool."
+            : " entered the curve.")
       );
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "First buy failed.");
@@ -371,11 +373,11 @@ export default function HatchPage() {
         </div>
 
         <div className="hatch-concept-strip">
-          <div><small>POND TOKEN</small><strong>{selected ? "$" + selected.symbol : "$PAID"}</strong></div>
+          <div><small>POND TOKEN</small><strong>{selected ? "$" + selected.symbol : "$POND"}</strong></div>
           <b>becomes the quote asset →</b>
           <div><small>NEW CREATURE</small><strong>{symbol ? "$" + symbol : "$FISH"}</strong></div>
           <b>trades as →</b>
-          <div><small>REAL MARKET</small><strong>{symbol || "FISH"} / {selected?.symbol || "PAID"}</strong></div>
+          <div><small>REAL MARKET</small><strong>{symbol || "FISH"} / {selected?.symbol || "POND"}</strong></div>
         </div>
 
         {!publicKey && (
@@ -397,7 +399,7 @@ export default function HatchPage() {
               {loading
                 ? "loading open ponds..."
                 : error ||
-                  "each pond is an existing Solana token with one reusable Meteora launch config."}
+                  "each pond is an existing token. p0nd chooses the compatible market route automatically."}
             </p>
 
             <div className="pond-picker">
