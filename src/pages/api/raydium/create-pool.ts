@@ -149,6 +149,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const transaction = built.transaction as Transaction;
+    const latest = await connection.getLatestBlockhash("confirmed");
+    transaction.feePayer = payer;
+    transaction.recentBlockhash = latest.blockhash;
+
     const address = (built.extInfo as any)?.address || {};
     const poolId =
       address.poolId?.toBase58?.() ||
@@ -170,6 +174,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       creatureLiquidityBaseUnits: baseAmount.toString(10),
       quoteLiquidityBaseUnits: quoteAmount.toString(10),
       engine: "raydium-cpmm",
+      lastValidBlockHeight: latest.lastValidBlockHeight,
     });
   } catch (error) {
     return res.status(500).json({
