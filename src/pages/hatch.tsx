@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Keypair, Transaction } from "@solana/web3.js";
 import { useRouter } from "next/router";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { usePondWalletConnect } from "@/hooks/usePondWalletConnect";
 import { Shell } from "@/components/Shell";
 import { useWorld } from "@/hooks/useWorld";
@@ -26,7 +26,6 @@ function readImage(file: File) {
 
 export default function HatchPage() {
   const router = useRouter();
-  const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   const { connectWallet, walletConnecting } = usePondWalletConnect();
   const { world, loading, error, refresh } = useWorld(10000);
@@ -65,19 +64,24 @@ export default function HatchPage() {
       if (!publicKey || !signTransaction) {
         throw new Error("Connect a wallet first.");
       }
+
       if (signer) transaction.partialSign(signer);
       const signed = await signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signed.serialize(), {
-        skipPreflight: false,
-        maxRetries: 3,
+
+      const response = await fetch("/api/solana/send-transaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transaction: Buffer.from(signed.serialize()).toString("base64"),
+        }),
       });
-      const confirmation = await connection.confirmTransaction(signature, "confirmed");
-      if (confirmation.value.err) {
-        throw new Error("Transaction failed: " + JSON.stringify(confirmation.value.err));
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Could not submit transaction.");
       }
-      return signature;
+      return String(data.signature);
     },
-    [connection, publicKey, signTransaction]
+    [publicKey, signTransaction]
   );
 
   const onImage = async (file?: File) => {
@@ -114,8 +118,43 @@ export default function HatchPage() {
     }
 
     setBusy("hatch");
-    setMessage("publishing metadata and building the launch...");
     try {
+      if (selected.launch_engine === "raydium-cpmm") {
+        const requested = Number(seedQuote);
+        if (!Number.isFinite(requested) || requested <= 0) {
+          throw new Error("enter a valid initial-liquidity amount.");
+        }
+
+        setMessage(
+          "checking your $" + (selected.symbol || "POND") + " balance..."
+        );
+        const balanceResponse = await fetch(
+          "/api/tokens/balance?owner=" +
+            encodeURIComponent(publicKey.toBase58()) +
+            "&mint=" +
+            encodeURIComponent(selected.mint),
+          { cache: "no-store" }
+        );
+        const balanceData = await balanceResponse.json();
+        if (!balanceResponse.ok) {
+          throw new Error(balanceData.error || "Could not check your pond-token balance.");
+        }
+
+        const available = Number(balanceData.amount || 0);
+        if (available + 1e-12 < requested) {
+          throw new Error(
+            "you need " +
+              seedQuote +
+              " " +
+              (selected.symbol || "pond tokens") +
+              " for initial liquidity; this wallet has " +
+              available.toLocaleString(undefined, { maximumFractionDigits: 8 }) +
+              "."
+          );
+        }
+      }
+
+      setMessage("publishing metadata and building the launch...");
       const baseMint = Keypair.generate();
 
       const metaResponse = await fetch("/api/metadata/publish", {
