@@ -33,9 +33,9 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <div className="pair-card pond-pair">
             <small>ON p0nd</small>
             <div className="pair-line">
-              <strong>PAID</strong><i>↔</i><strong>FROG</strong>
+              <strong>POND</strong><i>↔</i><strong>FROG</strong>
             </div>
-            <p>the new coin is priced in PAID.</p>
+            <p>the new coin is priced in POND.</p>
           </div>
         </div>
       </section>
@@ -49,7 +49,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
             A pond starts with an existing coin. Paste its CA once, and that coin becomes the quote asset for creatures launched inside the pond.
           </p>
           <div className="pond-orbit">
-            <div className="pond-core">$PAID</div>
+            <div className="pond-core">$POND</div>
             <span className="orbit-creature o1">$FROG</span>
             <span className="orbit-creature o2">$MOTH</span>
             <span className="orbit-creature o3">$DUCK</span>
@@ -67,7 +67,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <div className="token-slip">
             <div><small>NEW TOKEN</small><strong>$FROG</strong></div>
             <div><small>CHAIN</small><strong>SOLANA</strong></div>
-            <div><small>MARKET</small><strong>FROG / PAID</strong></div>
+            <div><small>MARKET</small><strong>FROG / POND</strong></div>
           </div>
         </article>
       </section>
@@ -81,14 +81,14 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
         <div className="flow-rail">
           <div className="flow-node">
             <small>BUYER</small>
-            <strong>100 PAID</strong>
+            <strong>100 POND</strong>
           </div>
           <div className="flow-step">
             <span>BUY FROG</span><b>→</b>
           </div>
           <div className="flow-node reserve-node">
             <small>DBC RESERVE</small>
-            <strong>≈99 PAID</strong>
+            <strong>≈99 POND</strong>
             <i>the pond gets deeper</i>
           </div>
           <div className="flow-step">
@@ -101,9 +101,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
         </div>
 
         <p className="flow-footnote">
-          Trading principal sits in the bonding curve as quote reserve. Sells
-          send the pond token back out to sellers. Configured trading fees are
-          separate.
+          Trading principal sits in the creature market as quote liquidity or reserve. Sells send the pond token back out to sellers. Trading fees are separate.
         </p>
       </section>
 
@@ -112,8 +110,8 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <span>WHY?</span>
           <h2>the parent token becomes the local currency.</h2>
           <p>
-            If people want a creature in the PAID pond, they need PAID. When
-            they sell the creature, they come back out into PAID. Instead of
+            If people want a creature in the POND pond, they need POND. When
+            they sell the creature, they come back out into POND. Instead of
             every ecosystem token orbiting SOL, a community can have markets
             that actually orbit its own token.
           </p>
@@ -125,7 +123,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <div className="eco-token west">$SNAIL</div>
           <div className="eco-core">
             <small>POND</small>
-            <strong>$PAID</strong>
+            <strong>$POND</strong>
           </div>
           <div className="eco-token east">$DUCK</div>
           <div className="eco-token south">$MOTH</div>
@@ -139,10 +137,10 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
       <section className="gravity-strip">
         <div>
           <small>THE STRONGEST LOOP</small>
-          <h2>enter through PAID. exit back into PAID.</h2>
+          <h2>enter through POND. exit back into POND.</h2>
         </div>
         <div className="gravity-flow">
-          <span>SOL</span><b>→</b><strong>PAID</strong><b>→</b><span>FROG</span><b>→</b><strong>PAID</strong>
+          <span>SOL</span><b>→</b><strong>POND</strong><b>→</b><span>FROG</span><b>→</b><strong>POND</strong>
         </div>
         <p>
           A creature does not magically guarantee demand for its pond token.
@@ -157,19 +155,18 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
           <small>CREATOR ECONOMICS</small>
           <h2>build in a pond. earn in the pond token.</h2>
           <p>
-            Each creature is a real Meteora DBC market. The current launch config gives the creature creator 50% of the DBC creator/partner trading-fee share. Because p0nd collects those fees in the quote token, a FROG
-            creator in the PAID pond earns claimable PAID as FROG trades.
+            Each creature is a real Solana market. p0nd uses Meteora DBC where the pond token is natively supported and a Raydium CPMM route for compatible fallback tokens. Fee behavior depends on the launch route, and the market always trades against its pond token.
           </p>
           <span>
-            that is separate from the PAID sitting in the bonding-curve reserve.
+            market reserves and trading fees are separate things; the exact accounting depends on the launch route.
           </span>
         </div>
         <div className="fee-loop">
-          <div><small>TRADERS</small><strong>FROG ↔ PAID</strong></div>
+          <div><small>TRADERS</small><strong>FROG ↔ POND</strong></div>
           <b>→</b>
-          <div className="fee-jar"><small>CREATOR FEE JAR</small><strong>PAID</strong></div>
+          <div className="fee-jar"><small>CREATOR FEE JAR</small><strong>POND</strong></div>
           <b>→</b>
-          <div><small>CREATOR</small><strong>CLAIM PAID</strong></div>
+          <div><small>CREATOR</small><strong>CLAIM POND</strong></div>
         </div>
       </section>
 
@@ -192,8 +189,7 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
             <small>CREATURE CREATORS</small>
             <h3>launch inside an existing token economy.</h3>
             <p>
-              Pick a supported pond, create a real SPL token, and let its DBC
-              collect configured trading fees in the pond token.
+              Pick a supported pond, create a real SPL token, and launch its market against the pond token using the compatible route.
             </p>
           </article>
           <article>
@@ -215,9 +211,9 @@ export function ConceptExplainer({ world }: { world: WorldPayload | null }) {
         </header>
         <div className="facts-grid">
           <div><small>CHAIN</small><strong>Solana</strong></div>
-          <div><small>LAUNCH MARKET</small><strong>Meteora DBC</strong></div>
+          <div><small>LAUNCH MARKET</small><strong>Meteora DBC / Raydium CPMM</strong></div>
           <div><small>QUOTE ASSET</small><strong>the pond token</strong></div>
-          <div><small>GRADUATION</small><strong>DAMM v2</strong></div>
+          <div><small>ROUTE</small><strong>chosen by token compatibility</strong></div>
           <div><small>METADATA</small><strong>IPFS / Pinata</strong></div>
           <div><small>WORLD STATE</small><strong>indexed from chain</strong></div>
           <div><small>ONE POND</small><strong>many creatures</strong></div>
