@@ -2,9 +2,15 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import BN from "bn.js";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import {
+  TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountIdempotentInstruction,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
+import {
   CurveCalculator,
   FeeOn,
-  TxVersion,
+  getPdaObservationId,
+  makeSwapCpmmBaseInInstruction,
 } from "@raydium-io/raydium-sdk-v2";
 import { consumeRateLimit } from "@/lib/rateLimit";
 import { ensureSchema, getDb } from "@/lib/db";
@@ -57,30 +63,95 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const outputDecimals =
       body.direction === "buy" ? 6 : Number(creature.quote_decimals);
     const inputAmount = humanToBaseUnits(body.amount, inputDecimals);
+
     if (inputAmount.lte(new BN(0))) {
       return res.status(400).json({ error: "Swap amount must be greater than zero." });
     }
 
-    const raydium = await loadRaydium(owner, { loadTokenAccounts: true });
+    const connection = getServerConnection();
+    const raydium = await loadRaydium(owner);
     const poolId = String(creature.pool);
     const poolData = await raydium.cpmm.getPoolInfoFromRpc(poolId);
     const poolInfo = poolData.poolInfo as any;
     const poolKeys = poolData.poolKeys as any;
     const rpcData = poolData.rpcData as any;
 
-    const inputMint =
+    const inputMintAddress =
       body.direction === "buy"
         ? String(creature.pond_mint)
         : baseMint.toBase58();
 
     if (
-      inputMint !== poolInfo.mintA.address &&
-      inputMint !== poolInfo.mintB.address
+      inputMintAddress !== poolInfo.mintA.address &&
+      inputMintAddress !== poolInfo.mintB.address
     ) {
       throw new Error("Input mint does not match the creature pool.");
     }
 
-    const baseIn = inputMint === poolInfo.mintA.address;
+    const baseIn = inputMintAddress === poolInfo.mintA.address;
+    const inputMintInfo = baseIn ? poolInfo.mintA : poolInfo.mintB;
+    const outputMintInfo = baseIn ? poolInfo.mintB : poolInfo.mintA;
+
+    const inputMint = new PublicKey(inputMintInfo.address);
+    const outputMint = new PublicKey(outputMintInfo.address);
+    const inputTokenProgram = new PublicKey(
+      inputMintInfo.programId || TOKEN_PROGRAM_ID
+    );
+    const outputTokenProgram = new PublicKey(
+      outputMintInfo.programId || TOKEN_PROGRAM_ID
+    );
+
+    const inputAccounts = await connection.getParsedTokenAccountsByOwner(
+      owner,
+      { mint: inputMint },
+      "confirmed"
+    );
+
+    let inputTokenAccount: PublicKey | null = null;
+    let largestBalance = 0n;
+
+    for (const entry of inputAccounts.value) {
+      const info = (entry.account.data as any)?.parsed?.info;
+      const raw = BigInt(String(info?.tokenAmount?.amount || "0"));
+      if (raw > largestBalance) {
+        largestBalance = raw;
+        inputTokenAccount = entry.pubkey;
+      }
+      if (raw >= BigInt(inputAmount.toString(10))) {
+        inputTokenAccount = entry.pubkey;
+        largestBalance = raw;
+        break;
+      }
+    }
+
+    if (!inputTokenAccount || largestBalance < BigInt(inputAmount.toString(10))) {
+      const held = baseUnitsToHuman(new BN(largestBalance.toString()), inputDecimals);
+      return res.status(400).json({
+        error:
+          "you need " +
+          body.amount +
+          " " +
+          (body.direction === "buy" ? "pond tokens" : "creature tokens") +
+          " for this " +
+          body.direction +
+          "; this wallet has " +
+          held +
+          ".",
+      });
+    }
+
+    const outputTokenAccount = getAssociatedTokenAddressSync(
+      outputMint,
+      owner,
+      false,
+      outputTokenProgram
+    );
+
+    const outputAccountInfo = await connection.getAccountInfo(
+      outputTokenAccount,
+      "confirmed"
+    );
+
     const configInfo = rpcData.configInfo;
     if (!configInfo) throw new Error("Raydium pool fee config is unavailable.");
 
@@ -100,25 +171,57 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       Math.max(Number(body.slippageBps ?? 300), 1),
       2500
     );
+    const minOutput = swapResult.outputAmount
+      .mul(new BN(10_000 - slippageBps))
+      .div(new BN(10_000));
 
-    const built = await raydium.cpmm.swap({
-      poolInfo,
-      poolKeys,
-      inputAmount,
-      swapResult,
-      slippage: slippageBps / 10_000,
-      baseIn,
-      txVersion: TxVersion.LEGACY,
-    });
+    const tx = new Transaction();
 
-    const transaction = built.transaction as Transaction;
-    const connection = getServerConnection();
+    if (!outputAccountInfo) {
+      tx.add(
+        createAssociatedTokenAccountIdempotentInstruction(
+          owner,
+          outputTokenAccount,
+          owner,
+          outputMint,
+          outputTokenProgram
+        )
+      );
+    }
+
+    const inputVault = new PublicKey(poolKeys.vault[baseIn ? "A" : "B"]);
+    const outputVault = new PublicKey(poolKeys.vault[baseIn ? "B" : "A"]);
+
+    tx.add(
+      makeSwapCpmmBaseInInstruction(
+        new PublicKey(poolInfo.programId),
+        owner,
+        new PublicKey(poolKeys.authority),
+        new PublicKey(poolKeys.config.id),
+        new PublicKey(poolInfo.id),
+        inputTokenAccount,
+        outputTokenAccount,
+        inputVault,
+        outputVault,
+        inputTokenProgram,
+        outputTokenProgram,
+        inputMint,
+        outputMint,
+        getPdaObservationId(
+          new PublicKey(poolInfo.programId),
+          new PublicKey(poolInfo.id)
+        ).publicKey,
+        inputAmount,
+        minOutput
+      )
+    );
+
     const latest = await connection.getLatestBlockhash("confirmed");
-    transaction.feePayer = owner;
-    transaction.recentBlockhash = latest.blockhash;
+    tx.feePayer = owner;
+    tx.recentBlockhash = latest.blockhash;
 
     return res.status(200).json({
-      transaction: transaction
+      transaction: tx
         .serialize({ requireAllSignatures: false, verifySignatures: false })
         .toString("base64"),
       pool: poolId,
@@ -128,6 +231,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         swapResult.outputAmount,
         outputDecimals
       ),
+      minimumAmountOut: baseUnitsToHuman(minOutput, outputDecimals),
       engine: "raydium-cpmm",
       lastValidBlockHeight: latest.lastValidBlockHeight,
     });
