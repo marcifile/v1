@@ -74,7 +74,7 @@ export function WorldFrame() {
 
         {ponds.length > 0 && (
           <div className="world-pond-tabs" aria-label="Open a pond habitat">
-            <span className="active"><strong>ALL</strong><small>{creatures.length}</small></span>
+            <button type="button" className="active" disabled><strong>ALL</strong><small>{creatures.length}</small></button>
             {ponds.slice(0, 6).map((pond) => (
               <Link key={pond.mint} href={"/pond/" + pond.mint}>
                 <strong>{"$" + (pond.symbol || "QUOTE")}</strong>
