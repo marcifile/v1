@@ -108,6 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       startTime: new BN(0),
       feeConfig: feeConfigs[0],
       associatedOnly: false,
+      addSupportMintExt: quoteProgram.equals(TOKEN_2022_PROGRAM_ID),
       ownerInfo: {
         useSOLBalance: false,
         feePayer: payer,
