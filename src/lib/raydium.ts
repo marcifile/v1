@@ -18,7 +18,7 @@ export async function loadRaydium(
   if (options.loadTokenAccounts) {
     // Refresh immediately so newly created/received accounts are visible to
     // swap builders even when the SDK instance was just initialized.
-    await raydium.account.fetchWalletTokenAccounts();
+    await raydium.account.fetchWalletTokenAccounts({ forceUpdate: true });
   }
 
   return raydium;
