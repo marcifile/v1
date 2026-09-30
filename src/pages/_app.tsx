@@ -55,8 +55,8 @@ export default function App({ Component, pageProps }: AppProps) {
           name="description"
           content="Launch real Solana tokens priced in other Solana tokens."
         />
-        <link rel="icon" type="image/svg+xml" href="/pond-mark.svg?v=5" />
-        <link rel="apple-touch-icon" href="/p0nd-logo.png?v=5" />
+        <link rel="icon" type="image/png" href="/p0nd-logo.png?v=6" />
+        <link rel="apple-touch-icon" href="/p0nd-logo.png?v=6" />
         <meta name="theme-color" content="#0b0d0a" />
         <meta property="og:site_name" content="p0nd" />
         <meta property="og:title" content="p0nd" />
