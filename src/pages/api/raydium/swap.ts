@@ -61,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Swap amount must be greater than zero." });
     }
 
-    const raydium = await loadRaydium(owner);
+    const raydium = await loadRaydium(owner, { loadTokenAccounts: true });
     const poolId = String(creature.pool);
     const poolData = await raydium.cpmm.getPoolInfoFromRpc(poolId);
     const poolInfo = poolData.poolInfo as any;
