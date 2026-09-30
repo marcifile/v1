@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useWorld } from "@/hooks/useWorld";
-import { formatBaseUnits, mediaUrl } from "@/lib/display";
+import { mediaUrl } from "@/lib/display";
+import type { WorldCreature } from "@/types/world";
 
 const positions = [
   { left: "12%", top: "55%" },
@@ -14,86 +15,49 @@ const positions = [
   { left: "84%", top: "76%" },
 ];
 
+function safeBigInt(value: string | null | undefined) {
+  try {
+    return BigInt(value || "0");
+  } catch {
+    return 0n;
+  }
+}
+
 export function WorldFrame() {
-  const { world, loading, error } = useWorld(10000);
-  const allCreatures = world?.creatures ?? [];
+  const { world, loading } = useWorld(10000);
+  const creatures = world?.creatures ?? [];
   const ponds = world?.ponds ?? [];
-  const [activeMint, setActiveMint] = useState("all");
 
-  useEffect(() => {
-    if (!ponds.length) {
-      setActiveMint("all");
-      return;
+  const pondTotals = useMemo(() => {
+    const totals = new Map<string, bigint>();
+    for (const creature of creatures) {
+      totals.set(
+        creature.pond_mint,
+        (totals.get(creature.pond_mint) || 0n) +
+          safeBigInt(creature.quote_reserve_base_units)
+      );
     }
-    if (
-      activeMint !== "all" &&
-      !ponds.some((pond) => pond.mint === activeMint)
-    ) {
-      setActiveMint("all");
-    }
-  }, [ponds, activeMint]);
+    return totals;
+  }, [creatures]);
 
-  const activePond = useMemo(
-    () =>
-      activeMint === "all"
-        ? null
-        : ponds.find((pond) => pond.mint === activeMint) ?? null,
-    [ponds, activeMint]
-  );
-
-  const creatures = useMemo(
-    () =>
-      activePond
-        ? allCreatures.filter(
-            (creature) => creature.pond_mint === activePond.mint
-          )
-        : allCreatures,
-    [allCreatures, activePond]
-  );
+  const weight = (creature: WorldCreature) => {
+    const reserve = safeBigInt(creature.quote_reserve_base_units);
+    const total = pondTotals.get(creature.pond_mint) || 0n;
+    if (reserve <= 0n || total <= 0n) return 0;
+    return Number((reserve * 10000n) / total) / 100;
+  };
 
   const featured = creatures[0] ?? null;
-  const waterTotal = activePond
-    ? formatBaseUnits(
-        activePond.quote_reserve_base_units,
-        activePond.quote_decimals,
-        2
-      )
-    : "mixed";
 
   return (
     <section className="world-console">
       <aside className="instrument-strip">
-        <div>
-          <small>POND NO.</small>
-          <strong>
-            {activePond
-              ? String(
-                  Math.max(
-                    1,
-                    ponds.findIndex((pond) => pond.mint === activePond.mint) + 1
-                  )
-                ).padStart(3, "0")
-              : ponds.length + " TOTAL"}
-          </strong>
-        </div>
-        <div>
-          <small>HABITAT</small>
-          <strong>{activePond ? "$" + (activePond.symbol || "QUOTE") : "ALL PONDS"}</strong>
-        </div>
-        <div>
-          <small>RESIDENTS</small>
-          <strong>{creatures.length}</strong>
-        </div>
-        <div>
-          <small>WATER</small>
-          <strong>
-            {activePond ? waterTotal + " " + (activePond.symbol ?? "") : "mixed quote assets"}
-          </strong>
-        </div>
+        <div><small>WORLD</small><strong>MAIN p0nd</strong></div>
+        <div><small>PONDS</small><strong>{ponds.length}</strong></div>
+        <div><small>CREATURES</small><strong>{creatures.length}</strong></div>
+        <div><small>VIEW</small><strong>ALL HABITATS</strong></div>
         <div className="instrument-scale" aria-hidden="true">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <i key={i} />
-          ))}
+          {Array.from({ length: 8 }).map((_, i) => <i key={i} />)}
         </div>
       </aside>
 
@@ -105,73 +69,47 @@ export function WorldFrame() {
         <div className="world-shimmer" />
 
         <div className="world-live-tag">
-          <i /> LIVE HABITAT <span>READ FROM CHAIN</span>
+          <i /> MAIN p0nd <span>ALL PONDS · READ FROM CHAIN</span>
         </div>
 
         {ponds.length > 0 && (
-          <div className="world-pond-tabs" aria-label="Choose pond habitat">
-            <button
-              type="button"
-              className={activeMint === "all" ? "active" : ""}
-              onClick={() => setActiveMint("all")}
-            >
-              <strong>ALL</strong>
-              <small>{allCreatures.length}</small>
-            </button>
+          <div className="world-pond-tabs" aria-label="Open a pond habitat">
+            <span className="active"><strong>ALL</strong><small>{creatures.length}</small></span>
             {ponds.slice(0, 6).map((pond) => (
-              <button
-                key={pond.mint}
-                type="button"
-                className={
-                  pond.mint === activePond?.mint ? "active" : ""
-                }
-                onClick={() => setActiveMint(pond.mint)}
-              >
+              <Link key={pond.mint} href={"/pond/" + pond.mint}>
                 <strong>{"$" + (pond.symbol || "QUOTE")}</strong>
                 <small>{pond.creature_count}</small>
-              </button>
+              </Link>
             ))}
             <Link href="/ponds">ALL PONDS →</Link>
           </div>
         )}
 
         <div className="featured">
-          <small>{activePond ? "CREATURE OF THIS POND" : "LATEST CREATURE"}</small>
+          <small>LATEST CREATURE · ANY POND</small>
           {featured ? (
             <>
               <strong>{"$" + featured.symbol}</strong>
-              <span>{(featured.progress * 100).toFixed(2)}% pond depth</span>
+              <span>
+                {weight(featured).toFixed(2) + "% weight in $" + (featured.pond_symbol || "POND")}
+              </span>
             </>
           ) : (
             <>
               <strong>—</strong>
-              <span>
-                {loading ? "checking the reeds..." : "nothing's biting"}
-              </span>
+              <span>{loading ? "checking the reeds..." : "nothing's biting"}</span>
             </>
           )}
         </div>
 
         <div className="hero-copy">
-          <div className="hero-kicker">
-            {activePond
-              ? "$" + (activePond.symbol || "QUOTE") + " POND"
-              : ponds.length + " PONDS · ONE WORLD"}
-          </div>
+          <div className="hero-kicker">{ponds.length + " PONDS · ONE MAIN p0nd"}</div>
           <h1>p0nd</h1>
-          <p>launch real coins priced in other coins.</p>
+          <p>every creature, across every pond.</p>
           <div className="hero-actions">
-            <Link
-              href={
-                activePond ? "/hatch?pond=" + activePond.mint : "/ponds/new"
-              }
-            >
-              {activePond ? "Hatch a creature" : "Open a pond"}
-            </Link>
-            <Link href="/docs">How it flows</Link>
-            <Link href="/creatures">
-              See all creatures <b>{allCreatures.length}</b>
-            </Link>
+            <Link href="/hatch">Hatch a creature</Link>
+            <Link href="/ponds/new">Open a pond</Link>
+            <Link href="/ponds">Browse ponds <b>{ponds.length}</b></Link>
           </div>
         </div>
 
@@ -179,10 +117,7 @@ export function WorldFrame() {
           {creatures.slice(0, positions.length).map((creature, i) => (
             <Link
               key={creature.mint}
-              className={
-                "world-creature " +
-                (creature.migrated ? "graduating" : "swimming")
-              }
+              className={"world-creature " + (creature.migrated ? "graduating" : "swimming")}
               style={positions[i]}
               href={"/creature/" + creature.mint}
               aria-label={creature.name}
@@ -192,40 +127,47 @@ export function WorldFrame() {
                 <img src={mediaUrl(creature.image_uri)} alt="" />
               </span>
               <small>
-                {"in $" + (creature.pond_symbol ?? "QUOTE")}
+                {weight(creature).toFixed(2) + "% · $" + (creature.pond_symbol || "POND")}
               </small>
             </Link>
           ))}
         </div>
 
-        {!loading && activePond && creatures.length === 0 && (
+        {!loading && creatures.length === 0 && (
           <div className="empty-water">
-            quiet water ·{" "}
-            <Link href={"/hatch?pond=" + activePond.mint}>
-              hatch the first creature here
-            </Link>
-          </div>
-        )}
-
-        {!loading && ponds.length === 0 && (
-          <div className="empty-water">
-            no ponds yet · <Link href="/ponds/new">open the first pond</Link>
+            the main p0nd is quiet · <Link href="/hatch">hatch the first creature</Link>
           </div>
         )}
 
         <div className="world-legend">
-          <span>
-            <i className="legend-new" /> POND
-          </span>
+          <span><i className="legend-new" /> WEIGHT</span>
           <strong>
-            {activePond
-              ? "$" +
-                (activePond.symbol || "QUOTE") +
-                " is the currency for every creature shown here"
-              : "all habitats together · each creature keeps its own pond currency"}
+            each creature&apos;s share of the indexed quote reserve inside its own pond
           </strong>
         </div>
       </div>
+
+      {creatures.length > 0 && (
+        <div className="pond-resident-list main-pond-ledger">
+          <header>
+            <small>ALL PONDS TOGETHER</small>
+            <strong>CREATURE WEIGHTS</strong>
+          </header>
+          {creatures.map((creature) => (
+            <Link
+              href={"/creature/" + creature.mint}
+              key={creature.mint}
+              className="pond-resident-row"
+            >
+              <span className="field-thumb"><img src={mediaUrl(creature.image_uri)} alt="" /></span>
+              <span><strong>{"$" + creature.symbol}</strong><small>{creature.name}</small></span>
+              <span><strong>{"$" + (creature.pond_symbol || "POND")}</strong><small>pond</small></span>
+              <span><strong>{weight(creature).toFixed(2) + "%"}</strong><small>weight in its pond</small></span>
+              <span>{creature.migrated ? "GRADUATED" : "SWIMMING"}</span>
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
