@@ -166,15 +166,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  const criticalOk =
+  // Railway uses this endpoint as a deployment liveness probe. The web
+  // process can be healthy even when an external dependency is briefly slow
+  // or unavailable, so those checks are diagnostic rather than deployment-
+  // blocking. This prevents healthy containers from being killed during
+  // rolling deploys because Pinata/RPC/indexer freshness missed a short window.
+  const dependenciesOk =
     checks.database.ok &&
     checks.solanaRpc.ok &&
     checks.indexer.ok &&
     checks.pinata.ok &&
     checks.sponsor.ok;
 
-  return res.status(criticalOk ? 200 : 503).json({
-    ok: criticalOk,
+  return res.status(200).json({
+    ok: true,
+    dependenciesOk,
     service: "p0nd-web",
     cluster,
     checks,
