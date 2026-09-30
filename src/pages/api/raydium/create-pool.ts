@@ -4,7 +4,6 @@ import { PublicKey, Transaction } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
-  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import {
   CREATE_CPMM_POOL_FEE_ACC,
@@ -84,18 +83,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Initial liquidity amounts must be greater than zero." });
     }
 
-    const quoteAta = getAssociatedTokenAddressSync(
-      pondMint,
+    const walletQuoteAccounts = await connection.getParsedTokenAccountsByOwner(
       payer,
-      false,
-      quoteProgram
+      { mint: pondMint },
+      "confirmed"
     );
-    const quoteAtaInfo = await connection.getAccountInfo(quoteAta, "confirmed");
-    const walletQuoteBalance = quoteAtaInfo
-      ? await connection.getTokenAccountBalance(quoteAta, "confirmed")
-      : null;
-    const availableQuote = new BN(walletQuoteBalance?.value.amount || "0");
 
+    let availableQuoteRaw = 0n;
+    let availableQuoteUi = 0;
+    for (const entry of walletQuoteAccounts.value) {
+      const info = (entry.account.data as any)?.parsed?.info;
+      const tokenAmount = info?.tokenAmount;
+      if (!tokenAmount) continue;
+      availableQuoteRaw += BigInt(String(tokenAmount.amount || "0"));
+      availableQuoteUi += Number(
+        tokenAmount.uiAmountString || tokenAmount.uiAmount || 0
+      );
+    }
+
+    const availableQuote = new BN(availableQuoteRaw.toString());
     if (availableQuote.lt(quoteAmount)) {
       return res.status(400).json({
         error:
@@ -104,7 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           " " +
           (pond.symbol || "pond tokens") +
           " for initial liquidity; this wallet has " +
-          (walletQuoteBalance?.value.uiAmountString || "0") +
+          availableQuoteUi.toLocaleString(undefined, { maximumFractionDigits: 8 }) +
           ".",
       });
     }
