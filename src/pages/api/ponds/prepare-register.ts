@@ -70,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const cluster = getActiveCluster();
     const quoteMint = extractSolanaAddress(req.body?.mint, "Pond mint");
-    const payer = new PublicKey(String((req.body as Body)?.payer || ""));
+    const rawPayer = String((req.body as Body)?.payer || "").trim();
     const inspected = await inspectToken(quoteMint, cluster);
 
     if (!inspected.launchSupportedNow) {
@@ -142,7 +142,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         `,
         [
           quoteMint.toBase58(),
-          payer.toBase58(),
+          rawPayer || null,
           JSON.stringify({
             launchEngine: "raydium-cpmm",
             registrationOnly: true,
@@ -161,6 +161,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    if (!rawPayer) {
+      return res.status(400).json({
+        error: "Connect a wallet to open this Meteora pond.",
+        inspection: inspected,
+      });
+    }
+
+    const payer = new PublicKey(rawPayer);
     const connection = getServerConnection();
     const client = new DynamicBondingCurveClient(connection, "confirmed");
     const configSigner = derivePondConfigKeypair(quoteMint, cluster);
