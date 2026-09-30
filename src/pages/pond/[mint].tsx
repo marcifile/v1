@@ -88,13 +88,24 @@ export default function PondPage() {
 
             <dl>
               <div><dt>residents</dt><dd>{pond.creature_count}</dd></div>
-              <div><dt>water in curves</dt><dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 6)} {pond.symbol}</dd></div>
+              <div><dt>indexed quote reserve</dt><dd>{formatBaseUnits(pond.quote_reserve_base_units, pond.quote_decimals, 6)} {pond.symbol}</dd></div>
               <div><dt>market price</dt><dd>{pond.price_usd ? "$" + Number(pond.price_usd).toLocaleString(undefined, { maximumSignificantDigits: 6 }) : "—"}</dd></div>
               <div><dt>market liquidity</dt><dd>{pond.liquidity_usd ? "$" + Number(pond.liquidity_usd).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—"}</dd></div>
               <div><dt>market cap</dt><dd>{pond.market_cap_usd ? "$" + Number(pond.market_cap_usd).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—"}</dd></div>
               <div><dt>trading fees</dt><dd>{formatBaseUnits(pond.total_trading_quote_fee_base_units, pond.quote_decimals, 6)} {pond.symbol}</dd></div>
               <div><dt>mint</dt><dd><a href={solanaExplorerUrl("address", pond.mint)} target="_blank" rel="noreferrer">{shortAddress(pond.mint, 7)} ↗</a></dd></div>
-              <div><dt>dbc config</dt><dd><a href={solanaExplorerUrl("address", pond.config)} target="_blank" rel="noreferrer">{shortAddress(pond.config, 7)} ↗</a></dd></div>
+              <div>
+                <dt>launch route</dt>
+                <dd>
+                  {pond.launch_engine === "raydium-cpmm" ? (
+                    "RAYDIUM CPMM"
+                  ) : (
+                    <a href={solanaExplorerUrl("address", pond.config)} target="_blank" rel="noreferrer">
+                      {"METEORA · " + shortAddress(pond.config, 7) + " ↗"}
+                    </a>
+                  )}
+                </dd>
+              </div>
               <div><dt>decimals</dt><dd>{pond.quote_decimals}</dd></div>
             </dl>
 
