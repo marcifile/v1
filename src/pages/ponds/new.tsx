@@ -223,7 +223,7 @@ export default function OpenPondPage({
 
       setMessage("confirm the one-time pond transaction in your wallet.");
       const tx = Transaction.from(Buffer.from(data.transaction, "base64"));
-      const signed = await signTransaction(tx);
+      const signed = await signTransaction!(tx);
       const signature = await connection.sendRawTransaction(signed.serialize(), {
         skipPreflight: false,
         maxRetries: 3,
