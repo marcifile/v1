@@ -11,6 +11,8 @@ import {
   createAssociatedTokenAccountIdempotentInstruction,
   createInitializeMintInstruction,
   createMintToInstruction,
+  createSetAuthorityInstruction,
+  AuthorityType,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { getActiveCluster, getServerConnection } from "@/lib/serverSolana";
@@ -72,6 +74,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ata,
         payer,
         CREATURE_SUPPLY,
+        [],
+        TOKEN_PROGRAM_ID
+      ),
+      createSetAuthorityInstruction(
+        baseMint,
+        payer,
+        AuthorityType.MintTokens,
+        null,
         [],
         TOKEN_PROGRAM_ID
       )
