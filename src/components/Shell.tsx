@@ -2,15 +2,15 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useRouter } from "next/router";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { PROJECT, ROUTES } from "@/lib/project";
 import { useWorld } from "@/hooks/useWorld";
 import { shortAddress } from "@/lib/display";
+import { usePondWalletConnect } from "@/hooks/usePondWalletConnect";
 
 export function Shell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { publicKey, connected, disconnect } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { connectWallet, walletConnecting } = usePondWalletConnect();
   const { world, error } = useWorld(15000);
 
   const latest = world?.events?.[0];
@@ -64,8 +64,8 @@ export function Shell({ children }: { children: ReactNode }) {
               {shortAddress(publicKey.toBase58(), 4)}
             </button>
           ) : (
-            <button type="button" onClick={() => setVisible(true)}>
-              Connect
+            <button type="button" disabled={walletConnecting} onClick={connectWallet}>
+              {walletConnecting ? "Connecting..." : "Connect"}
             </button>
           )}
         </div>
