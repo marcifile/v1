@@ -162,17 +162,22 @@ export async function inspectToken(
           String(extension)
       );
 
-  const raydiumBlockedExtensions = extensionNames.filter(
-    (name) =>
-      name === "PermanentDelegate" ||
-      name === "NonTransferable" ||
-      name === "DefaultAccountState" ||
-      name.startsWith("Confidential")
+  // Raydium CPMM's on-chain program permissionlessly accepts legacy SPL
+  // mints and Token-2022 mints containing only this extension set.
+  const raydiumPermissionlessExtensions = new Set([
+    "TransferFeeConfig",
+    "MetadataPointer",
+    "TokenMetadata",
+    "InterestBearingConfig",
+    "ScaledUiAmount",
+  ]);
+  const raydiumUnsupportedExtensions = extensionNames.filter(
+    (name) => !raydiumPermissionlessExtensions.has(name)
   );
 
   const meteoraSupported = standardSpl || Boolean(badge);
   const raydiumSupported =
-    standardSpl || raydiumBlockedExtensions.length === 0;
+    standardSpl || raydiumUnsupportedExtensions.length === 0;
 
   const launchEngine = meteoraSupported
     ? "meteora-dbc"
@@ -190,10 +195,10 @@ export async function inspectToken(
       "Token-2022 quote mint has a Meteora token badge, so the bonding-curve route is available."
     );
   }
-  if (raydiumBlockedExtensions.length > 0) {
+  if (raydiumUnsupportedExtensions.length > 0) {
     warnings.push(
-      "This Token-2022 mint uses extensions Raydium does not allow for permissionless pools: " +
-        raydiumBlockedExtensions.join(", ") +
+      "This Token-2022 mint uses extensions outside Raydium's permissionless set: " +
+        raydiumUnsupportedExtensions.join(", ") +
         "."
     );
   }
