@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import {
+  getAssociatedTokenAddressSync,
   NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -24,29 +25,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    const [legacy, token2022] = await Promise.all([
-      connection.getParsedTokenAccountsByOwner(owner, { programId: TOKEN_PROGRAM_ID }, "confirmed"),
-      connection.getParsedTokenAccountsByOwner(owner, { programId: TOKEN_2022_PROGRAM_ID }, "confirmed"),
-    ]);
+    const mintAccount = await connection.getAccountInfo(mint, "confirmed");
+    const tokenProgram = mintAccount?.owner.equals(TOKEN_2022_PROGRAM_ID)
+      ? TOKEN_2022_PROGRAM_ID
+      : mintAccount?.owner.equals(TOKEN_PROGRAM_ID)
+      ? TOKEN_PROGRAM_ID
+      : null;
 
-    let amount = 0;
-    let amountBaseUnits = 0n;
-    let decimals = 0;
-
-    for (const entry of [...legacy.value, ...token2022.value]) {
-      const info = (entry.account.data as any)?.parsed?.info;
-      if (info?.mint !== mint.toBase58()) continue;
-      const tokenAmount = info?.tokenAmount;
-      if (!tokenAmount) continue;
-      amount += Number(tokenAmount.uiAmountString || tokenAmount.uiAmount || 0);
-      amountBaseUnits += BigInt(String(tokenAmount.amount || "0"));
-      decimals = Number(tokenAmount.decimals || 0);
+    if (!tokenProgram) {
+      return res.status(400).json({ error: "Pond token mint is not a supported Solana token." });
     }
 
+    const ata = getAssociatedTokenAddressSync(mint, owner, false, tokenProgram);
+    const ataInfo = await connection.getAccountInfo(ata, "confirmed");
+    if (!ataInfo) {
+      return res.status(200).json({
+        amount: 0,
+        amountBaseUnits: "0",
+        decimals: 0,
+      });
+    }
+
+    const tokenAmount = await connection.getTokenAccountBalance(ata, "confirmed");
     return res.status(200).json({
-      amount,
-      amountBaseUnits: amountBaseUnits.toString(),
-      decimals,
+      amount: Number(tokenAmount.value.uiAmountString || tokenAmount.value.uiAmount || 0),
+      amountBaseUnits: tokenAmount.value.amount,
+      decimals: tokenAmount.value.decimals,
     });
   } catch (error) {
     return res.status(400).json({
