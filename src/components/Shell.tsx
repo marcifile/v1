@@ -55,6 +55,14 @@ export function Shell({ children }: { children: ReactNode }) {
               {route.label}
             </Link>
           ))}
+          <a
+            href={PROJECT.xUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={"p0nd on X " + PROJECT.xHandle}
+          >
+            X
+          </a>
         </nav>
 
         <div className="topbar-actions">
